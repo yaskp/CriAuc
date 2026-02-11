@@ -279,7 +279,7 @@ const Auction = () => {
                                 {auction.comboPlayers && auction.comboPlayers.map(p => (
                                     <div key={p.id} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '15px', width: '100px' }}>
                                         <div style={{ width: 60, height: 60, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 5px auto', border: p.is_icon ? '2px solid gold' : '2px solid #555' }}>
-                                            <img src={p.image ? getImageUrl(p.image)` : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </div>
                                         <div style={{ color: 'white', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                                         <div style={{ color: '#aaa', fontSize: '0.7rem' }}>{p.category}</div>
@@ -292,7 +292,7 @@ const Auction = () => {
                             <motion.img
                                 key={auction.player.image}
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                src={auction.player.image ? getImageUrl(auction.player.image)` : 'https://via.placeholder.com/400?text=No+Image'}
+                                src={auction.player.image ? getImageUrl(auction.player.image) : 'https://via.placeholder.com/400?text=No+Image'}
                                 style={{ height: '250px', objectFit: 'contain', zIndex: 1 }}
                             />
                             <div style={{ zIndex: 2, textAlign: 'center', marginTop: '15px', padding: '0 10px' }}>
