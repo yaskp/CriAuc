@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Gavel, Star, Crown, LayoutDashboard, RefreshCcw, Shuffle, User, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 
 const Auction = () => {
     const navigate = useNavigate();
@@ -22,18 +23,18 @@ const Auction = () => {
         base_price: 10000
     });
 
-    const fetchTeams = () => axios.get('http://localhost:5000/api/teams').then(res => setTeams(res.data));
+    const fetchTeams = () => axios.get(getApiUrl('/api/teams')).then(res => setTeams(res.data));
     const [sponsors, setSponsors] = useState([]);
 
     const fetchConfig = () => {
-        axios.get('http://localhost:5000/api/config').then(res => setConfig(res.data));
-        axios.get('http://localhost:5000/api/sponsors').then(res => setSponsors(res.data));
+        axios.get(getApiUrl('/api/config')).then(res => setConfig(res.data));
+        axios.get(getApiUrl('/api/sponsors')).then(res => setSponsors(res.data));
     };
 
     const mainSponsor = sponsors.find(s => s.type === 'main' || s.type === 'powered') || (config?.sponsor_logo ? { logo: config.sponsor_logo, name: 'Sponsor' } : null);
 
 
-    const fetchPlayers = () => axios.get('http://localhost:5000/api/players').then(res => setPlayers(res.data));
+    const fetchPlayers = () => axios.get(getApiUrl('/api/players')).then(res => setPlayers(res.data));
 
     useEffect(() => {
         fetchTeams();
@@ -56,7 +57,7 @@ const Auction = () => {
             }
 
             if (data.highestBidder) {
-                axios.get('http://localhost:5000/api/teams').then(res => {
+                axios.get(getApiUrl('/api/teams')).then(res => {
                     const t = res.data.find(x => x.id === data.highestBidder.teamId);
                     setLastBidderTeam(t);
                 });
@@ -157,7 +158,7 @@ const Auction = () => {
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ textAlign: 'center', padding: '3rem', border: '2px solid #ffd700', borderRadius: '30px', minWidth: '450px' }}>
                     <div style={{ color: '#ffd700', fontWeight: 'bold', marginBottom: '1rem', letterSpacing: '2px' }}>🎲 LUCKY DIP RESULT</div>
                     <div style={{ width: 150, height: 150, borderRadius: '50%', background: '#1e293b', margin: '0 auto 20px auto', overflow: 'hidden', border: '4px solid gold' }}>
-                        {auction.player.image ? <img src={`http://localhost:5000${auction.player.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gavel size={60} style={{ padding: '40px', opacity: 0.2 }} />}
+                        {auction.player.image ? <img src={getImageUrl(auction.player.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gavel size={60} style={{ padding: '40px', opacity: 0.2 }} />}
                     </div>
                     <h1 style={{ fontSize: '3.5rem', margin: '0 0 1rem 0', fontWeight: '900' }}>{auction.player.name}</h1>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 20px', borderRadius: '10px', display: 'inline-block', marginBottom: '2.5rem' }}>
@@ -244,7 +245,7 @@ const Auction = () => {
             {/* Header / Status */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 {config.tournament_logo && (
-                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 50, marginRight: '15px', background: 'white', padding: '5px', borderRadius: '8px' }} alt="Tournament Logo" />
+                    <img src={getImageUrl(config.tournament_logo)} style={{ height: 50, marginRight: '15px', background: 'white', padding: '5px', borderRadius: '8px' }} alt="Tournament Logo" />
                 )}
 
                 <div style={{ background: '#1e293b', padding: '10px 20px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #333', flex: 1 }}>
@@ -254,7 +255,7 @@ const Auction = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', marginLeft: '15px', gap: '15px' }}>
                     {mainSponsor && (
-                        <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 40, background: 'white', padding: '4px', borderRadius: '6px' }} alt="Sponsor Logo" />
+                        <img src={getImageUrl(mainSponsor.logo)} style={{ height: 40, background: 'white', padding: '4px', borderRadius: '6px' }} alt="Sponsor Logo" />
                     )}
                     <div style={{ color: isConnected ? '#22c55e' : '#ef4444', fontSize: '1rem', marginTop: '-2px' }}>
                         {isConnected ? '●' : '○'}
@@ -278,7 +279,7 @@ const Auction = () => {
                                 {auction.comboPlayers && auction.comboPlayers.map(p => (
                                     <div key={p.id} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '15px', width: '100px' }}>
                                         <div style={{ width: 60, height: 60, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 5px auto', border: p.is_icon ? '2px solid gold' : '2px solid #555' }}>
-                                            <img src={p.image ? `http://localhost:5000${p.image}` : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={p.image ? getImageUrl(p.image)` : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </div>
                                         <div style={{ color: 'white', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                                         <div style={{ color: '#aaa', fontSize: '0.7rem' }}>{p.category}</div>
@@ -291,7 +292,7 @@ const Auction = () => {
                             <motion.img
                                 key={auction.player.image}
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                src={auction.player.image ? `http://localhost:5000${auction.player.image}` : 'https://via.placeholder.com/400?text=No+Image'}
+                                src={auction.player.image ? getImageUrl(auction.player.image)` : 'https://via.placeholder.com/400?text=No+Image'}
                                 style={{ height: '250px', objectFit: 'contain', zIndex: 1 }}
                             />
                             <div style={{ zIndex: 2, textAlign: 'center', marginTop: '15px', padding: '0 10px' }}>
@@ -366,7 +367,7 @@ const Auction = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', justifyContent: 'center' }}>
                                         <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '8px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                             {t.logo ? (
-                                                <img src={`http://localhost:5000${t.logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                <img src={getImageUrl(t.logo)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                             ) : (
                                                 <Shield size={20} color="#1e293b" />
                                             )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import { Trash2, RefreshCcw, AlertTriangle, Database, Users, UserX, Settings as SettingsIcon, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -34,7 +35,7 @@ const Settings = () => {
 
     const fetchSponsors = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/sponsors');
+            const res = await axios.get(getApiUrl('/api/sponsors'));
             setSponsors(res.data);
         } catch (err) { console.error(err); }
     };
@@ -50,7 +51,7 @@ const Settings = () => {
 
         try {
             setLoading(true);
-            await axios.post('http://localhost:5000/api/sponsors', formData, {
+            await axios.post(getApiUrl('/api/sponsors'), formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setNewSponsor({ name: '', type: 'co', file: null });
@@ -65,14 +66,14 @@ const Settings = () => {
     const handleDeleteSponsor = async (id) => {
         if (!confirm('Delete this sponsor?')) return;
         try {
-            await axios.delete(`http://localhost:5000/api/sponsors/${id}`);
+            await axios.delete(getApiUrl(`/api/sponsors/${id}`));
             fetchSponsors();
         } catch (err) { alert('Error deleting'); }
     };
 
     const fetchConfig = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/config');
+            const res = await axios.get(getApiUrl('/api/config'));
             setConfig(res.data);
         } catch (err) {
             console.error('Error fetching config:', err);
@@ -97,7 +98,7 @@ const Settings = () => {
             if (logoFiles.tournament) formData.append('tournament_logo', logoFiles.tournament);
             if (logoFiles.sponsor) formData.append('sponsor_logo', logoFiles.sponsor);
 
-            const res = await axios.put('http://localhost:5000/api/config', formData, {
+            const res = await axios.put(getApiUrl('/api/config'), formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -122,7 +123,7 @@ const Settings = () => {
 
         setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/players/reset');
+            await axios.post(getApiUrl('/api/players/reset'));
             alert('✅ Auction reset successfully! All players are now unsold.');
             window.location.reload();
         } catch (err) {
@@ -144,7 +145,7 @@ const Settings = () => {
 
         setLoading(true);
         try {
-            await axios.delete('http://localhost:5000/api/players/reset-all');
+            await axios.delete(getApiUrl('/api/players/reset-all'));
             alert('✅ All players deleted successfully!');
             window.location.reload();
         } catch (err) {
@@ -166,7 +167,7 @@ const Settings = () => {
 
         setLoading(true);
         try {
-            await axios.delete('http://localhost:5000/api/teams/reset-all');
+            await axios.delete(getApiUrl('/api/teams/reset-all'));
             alert('✅ All teams deleted successfully!');
             window.location.reload();
         } catch (err) {
@@ -188,8 +189,8 @@ const Settings = () => {
 
         setLoading(true);
         try {
-            await axios.delete('http://localhost:5000/api/players/reset-all');
-            await axios.delete('http://localhost:5000/api/teams/reset-all');
+            await axios.delete(getApiUrl('/api/players/reset-all'));
+            await axios.delete(getApiUrl('/api/teams/reset-all'));
             alert('✅ Everything deleted successfully! Starting fresh.');
             window.location.reload();
         } catch (err) {
@@ -264,7 +265,7 @@ const Settings = () => {
                                 {logoFiles.tournament ? (
                                     <img src={URL.createObjectURL(logoFiles.tournament)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                 ) : config.tournament_logo ? (
-                                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    <img src={getImageUrl(config.tournament_logo)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                 ) : (
                                     <div style={{ opacity: 0.2, fontSize: '0.7rem' }}>No Logo</div>
                                 )}
@@ -287,7 +288,7 @@ const Settings = () => {
                                 {logoFiles.sponsor ? (
                                     <img src={URL.createObjectURL(logoFiles.sponsor)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                 ) : config.sponsor_logo ? (
-                                    <img src={`http://localhost:5000${config.sponsor_logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    <img src={getImageUrl(config.sponsor_logo)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                 ) : (
                                     <div style={{ opacity: 0.2, fontSize: '0.7rem' }}>No Logo</div>
                                 )}
@@ -353,7 +354,7 @@ const Settings = () => {
                                     onClick={() => handleDeleteSponsor(sp.id)}
                                     style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(0,0,0,0.5)', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >×</button>
-                                <img src={`http://localhost:5000${sp.logo}`} style={{ height: '60px', maxWidth: '100%', objectFit: 'contain', marginBottom: '10px' }} />
+                                <img src={getImageUrl(sp.logo)} style={{ height: '60px', maxWidth: '100%', objectFit: 'contain', marginBottom: '10px' }} />
                                 <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#0f172a' }}>{sp.name}</div>
                                 <div style={{ fontSize: '0.7rem', opacity: 0.6, textTransform: 'uppercase', color: '#64748b' }}>{sp.type}</div>
                             </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import socket from '../socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -40,9 +41,9 @@ const Teams = () => {
 
     const fetchConfig = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/config');
+            const res = await axios.get(getApiUrl('/api/config'));
             setConfig(res.data);
-            const sRes = await axios.get('http://localhost:5000/api/sponsors');
+            const sRes = await axios.get(getApiUrl('/api/sponsors'));
             setSponsors(sRes.data);
         } catch (err) {
             console.error("Error fetching config", err);
@@ -53,13 +54,13 @@ const Teams = () => {
 
     const fetchData = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/teams');
+            const res = await axios.get(getApiUrl('/api/teams'));
             const teamList = res.data;
             setTeams(teamList);
 
             const squadData = {};
             for (const t of teamList) {
-                const sRes = await axios.get(`http://localhost:5000/api/teams/${t.id}/squad`);
+                const sRes = await axios.get(getApiUrl(`/api/teams/${t.id}/squad`));
                 squadData[t.id] = sRes.data;
             }
             setSquads(squadData);
@@ -125,7 +126,7 @@ const Teams = () => {
         <div className="container" style={{ paddingBottom: '5rem' }}>
             <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    {config.tournament_logo && <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 60, background: 'white', padding: '5px', borderRadius: '8px' }} alt="Tournament Logo" />}
+                    {config.tournament_logo && <img src={getImageUrl(config.tournament_logo)} style={{ height: 60, background: 'white', padding: '5px', borderRadius: '8px' }} alt="Tournament Logo" />}
                     <div>
                         <h1 style={{ marginBottom: '0.5rem', fontSize: '2.5rem' }}>War Room Strategy</h1>
                         <p style={{ opacity: 0.6, margin: 0 }}>Monitor team rosters and financial health in real-time.</p>
@@ -136,7 +137,7 @@ const Teams = () => {
                     {mainSponsor && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ opacity: 0.5, fontSize: '0.8rem', letterSpacing: '2px' }}>SPONSORED BY</span>
-                            <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 40, background: 'white', padding: '4px', borderRadius: '6px' }} alt="Sponsor Logo" />
+                            <img src={getImageUrl(mainSponsor.logo)} style={{ height: 40, background: 'white', padding: '4px', borderRadius: '6px' }} alt="Sponsor Logo" />
                         </div>
                     )}
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '10px', height: 'fit-content' }}>
@@ -242,7 +243,7 @@ const Teams = () => {
                         <div ref={squadRef} className="glass-card" style={{ padding: '0', overflow: 'hidden', border: '2px solid rgba(255, 215, 0, 0.2)' }}>
                             <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    {selectedTeam.logo && <img src={`http://localhost:5000${selectedTeam.logo}`} style={{ height: 50, background: 'white', padding: '4px', borderRadius: '8px' }} alt="" />}
+                                    {selectedTeam.logo && <img src={getImageUrl(selectedTeam.logo)} style={{ height: 50, background: 'white', padding: '4px', borderRadius: '8px' }} alt="" />}
                                     <div>
                                         <h2 style={{ margin: 0 }}>{selectedTeam.name} Squad</h2>
                                         <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '5px' }}>
@@ -321,7 +322,7 @@ const Teams = () => {
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#334155', overflow: 'hidden' }}>
                                                                 {p.image ? (
-                                                                    <img src={`http://localhost:5000${p.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                                    <img src={getImageUrl(p.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                                                                 ) : <User size={20} style={{ margin: '10px' }} />}
                                                             </div>
                                                             <div>
@@ -372,7 +373,7 @@ const Teams = () => {
                                                     <td style={{ padding: '10px 15px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                             {p.image ? (
-                                                                <img src={`http://localhost:5000${p.image}`} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                                                                <img src={getImageUrl(p.image)} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt="" />
                                                             ) : (
                                                                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                     <User size={20} />
@@ -387,7 +388,7 @@ const Teams = () => {
                                                     </td>
                                                     <td style={{ padding: '15px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            {team?.logo && <img src={`http://localhost:5000${team.logo}`} style={{ height: 20, background: 'white', padding: '2px', borderRadius: '4px' }} alt="" />}
+                                                            {team?.logo && <img src={getImageUrl(team.logo)} style={{ height: 20, background: 'white', padding: '2px', borderRadius: '4px' }} alt="" />}
                                                             {team?.name}
                                                         </div>
                                                     </td>
@@ -435,7 +436,7 @@ const Teams = () => {
                                             overflow: 'hidden'
                                         }}>
                                             {t.logo ? (
-                                                <img src={`http://localhost:5000${t.logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'white', padding: '2px' }} alt={t.name} />
+                                                <img src={getImageUrl(t.logo)} style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'white', padding: '2px' }} alt={t.name} />
                                             ) : (
                                                 <Shield size={24} color="#666" />
                                             )}
@@ -502,7 +503,7 @@ const Teams = () => {
                                                 <td style={{ padding: '10px 15px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                         {p.image ? (
-                                                            <img src={`http://localhost:5000${p.image}`} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                                                            <img src={getImageUrl(p.image)} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt="" />
                                                         ) : (
                                                             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                 <User size={20} />
@@ -517,7 +518,7 @@ const Teams = () => {
                                                 </td>
                                                 <td style={{ padding: '15px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        {team?.logo && <img src={`http://localhost:5000${team.logo}`} style={{ height: 20 }} alt="" />}
+                                                        {team?.logo && <img src={getImageUrl(team.logo)} style={{ height: 20 }} alt="" />}
                                                         {team?.name}
                                                     </div>
                                                 </td>

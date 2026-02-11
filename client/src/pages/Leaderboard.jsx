@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import socket from '../socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, User, Wallet, TrendingUp, Users, Award } from 'lucide-react';
@@ -25,9 +26,9 @@ const Leaderboard = () => {
 
     const fetchConfig = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/config');
+            const res = await axios.get(getApiUrl('/api/config'));
             setConfig(res.data);
-            const sRes = await axios.get('http://localhost:5000/api/sponsors');
+            const sRes = await axios.get(getApiUrl('/api/sponsors'));
             setSponsors(sRes.data);
         } catch (err) {
             console.error("Error fetching config", err);
@@ -39,13 +40,13 @@ const Leaderboard = () => {
 
     const fetchData = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/teams');
+            const res = await axios.get(getApiUrl('/api/teams'));
             const teamList = res.data;
             setTeams(teamList);
 
             const squadData = {};
             for (const t of teamList) {
-                const sRes = await axios.get(`http://localhost:5000/api/teams/${t.id}/squad`);
+                const sRes = await axios.get(getApiUrl(`/api/teams/${t.id}/squad`));
                 squadData[t.id] = sRes.data;
             }
             setSquads(squadData);
@@ -87,7 +88,7 @@ const Leaderboard = () => {
                     {config.tournament_logo && (
                         <motion.img
                             initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-                            src={`http://localhost:5000${config.tournament_logo}`}
+                            src={getImageUrl(config.tournament_logo)}
                             style={{ height: 90, filter: 'drop-shadow(0 0 20px rgba(255,215,0,0.3))', background: 'white', padding: '8px', borderRadius: '12px' }}
                             alt="Tournament Logo"
                         />
@@ -103,7 +104,7 @@ const Leaderboard = () => {
                 {mainSponsor && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.05)', padding: '15px 25px', borderRadius: '15px' }}>
                         <span style={{ opacity: 0.5, fontSize: '0.8rem', letterSpacing: '3px', fontWeight: '600' }}>SPONSORED BY</span>
-                        <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 50, background: 'white', padding: '5px', borderRadius: '8px' }} alt="Sponsor Logo" />
+                        <img src={getImageUrl(mainSponsor.logo)} style={{ height: 50, background: 'white', padding: '5px', borderRadius: '8px' }} alt="Sponsor Logo" />
                     </div>
                 )}
             </header>
@@ -159,7 +160,7 @@ const Leaderboard = () => {
                                         border: '1px solid rgba(255,255,255,0.1)'
                                     }}>
                                         {team.logo ? (
-                                            <img src={`http://localhost:5000${team.logo}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', background: 'white', borderRadius: '8px', padding: '2px' }} alt="" />
+                                            <img src={getImageUrl(team.logo)} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', background: 'white', borderRadius: '8px', padding: '2px' }} alt="" />
                                         ) : <Shield size={34} color="rgba(255,255,255,0.3)" />}
                                     </div>
                                     <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -312,7 +313,7 @@ const Leaderboard = () => {
                     {[...teams, ...sponsors].map((item, i) => (
                         <span key={i} style={{ display: 'inline-flex', alignItems: 'center', marginRight: '60px' }}>
                             <img
-                                src={`http://localhost:5000${item.logo}`}
+                                src={getImageUrl(item.logo)}
                                 style={{ height: 50, marginRight: '15px', objectFit: 'contain' }}
                                 alt=""
                             />
@@ -325,7 +326,7 @@ const Leaderboard = () => {
                     {[...teams, ...sponsors].map((item, i) => (
                         <span key={`dup-${i}`} style={{ display: 'inline-flex', alignItems: 'center', marginRight: '60px' }}>
                             <img
-                                src={`http://localhost:5000${item.logo}`}
+                                src={getImageUrl(item.logo)}
                                 style={{ height: 50, marginRight: '15px', objectFit: 'contain' }}
                                 alt=""
                             />

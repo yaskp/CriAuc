@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import { motion } from 'framer-motion';
 import { Shield, User, Award, Download, Share2, QrCode as QrCodeIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
@@ -25,9 +26,9 @@ const PublicTeamView = () => {
     const fetchData = async () => {
         try {
             const [configRes, teamRes, squadRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/config'),
-                axios.get('http://localhost:5000/api/teams'),
-                axios.get(`http://localhost:5000/api/teams/${teamId}/squad`)
+                axios.get(getApiUrl('/api/config')),
+                axios.get(getApiUrl('/api/teams')),
+                axios.get(getApiUrl(`/api/teams/${teamId}/squad`))
             ]);
 
             setConfig(configRes.data);
@@ -114,7 +115,7 @@ const PublicTeamView = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     {config.tournament_logo && (
-                        <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 60, background: 'white', padding: '6px', borderRadius: '10px' }} alt="Tournament" />
+                        <img src={getImageUrl(config.tournament_logo)} style={{ height: 60, background: 'white', padding: '6px', borderRadius: '10px' }} alt="Tournament" />
                     )}
                     <div>
                         <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '900' }}>Team Squad</h1>
@@ -255,7 +256,7 @@ const PublicTeamView = () => {
                                 justifyContent: 'center',
                                 boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
                             }}>
-                                <img src={`http://localhost:5000${team.logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" />
+                                <img src={getImageUrl(team.logo)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" />
                             </div>
                         )}
                         <div>
@@ -331,7 +332,7 @@ const PublicTeamView = () => {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#334155', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 {player.image ? (
-                                                    <img src={`http://localhost:5000${player.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                    <img src={getImageUrl(player.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                                                 ) : (
                                                     <User size={18} />
                                                 )}

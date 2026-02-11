@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import socket from '../socket';
 import { useNavigate } from 'react-router-dom';
 import { Play, RefreshCcw, User, Shield, Star, Shuffle, RotateCcw, AlertTriangle } from 'lucide-react';
@@ -47,8 +48,8 @@ const Admin = () => {
         };
     }, []);
 
-    const fetchPlayers = async () => { const res = await axios.get('http://localhost:5000/api/players'); setPlayers(res.data); };
-    const fetchTeams = async () => { const res = await axios.get('http://localhost:5000/api/teams'); setTeams(res.data); };
+    const fetchPlayers = async () => { const res = await axios.get(getApiUrl('/api/players')); setPlayers(res.data); };
+    const fetchTeams = async () => { const res = await axios.get(getApiUrl('/api/teams')); setTeams(res.data); };
 
     const startAuction = (player) => {
         if (!isConnected) return alert("❌ Connection Lost! Check Server.");
@@ -61,7 +62,7 @@ const Admin = () => {
 
     const resetPlayer = async (id) => {
         if (confirm("Move player back to UNSOLD?")) {
-            await axios.post(`http://localhost:5000/api/players/unsold/${id}`);
+            await axios.post(getApiUrl(`/api/players/unsold/${id}`));
             fetchPlayers();
         }
     };
@@ -138,7 +139,7 @@ const Admin = () => {
                             <div key={p.id} className="glass-card" style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: livePlayerId === p.id ? '2px solid #ef4444' : '1px solid rgba(255,255,255,0.05)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div style={{ width: 45, height: 45, borderRadius: '10px', background: '#1e293b', overflow: 'hidden' }}>
-                                        {p.image ? <img src={`http://localhost:5000${p.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User style={{ padding: '10px', opacity: 0.3 }} />}
+                                        {p.image ? <img src={getImageUrl(p.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User style={{ padding: '10px', opacity: 0.3 }} />}
                                     </div>
                                     <div>
                                         <div style={{ fontWeight: 'bold' }}>{p.name}</div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import socket from '../socket';
 import { Plus, Trash2, Edit, User, Shield, Star, Upload, Search, Filter, Layers, Users, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,7 +30,7 @@ const Players = () => {
     const deleteAllPlayers = async () => {
         if (!confirm('🚨 ARE YOU SURE?\n\nThis will delete ALL players from the database.\nThis action cannot be undone!')) return;
         try {
-            await axios.delete('http://localhost:5000/api/players/reset-all');
+            await axios.delete(getApiUrl('/api/players/reset-all'));
             alert('✅ All players deleted.');
             fetchPlayers();
         } catch (err) {
@@ -61,7 +62,7 @@ const Players = () => {
     const fetchPlayers = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/players');
+            const res = await axios.get(getApiUrl('/api/players'));
             setPlayers(res.data);
         } catch (err) {
             console.error("Error fetching players", err);
@@ -77,8 +78,8 @@ const Players = () => {
         });
 
         try {
-            if (form.id) await axios.put(`http://localhost:5000/api/players/${form.id}`, formData);
-            else await axios.post('http://localhost:5000/api/players', formData);
+            if (form.id) await axios.put(getApiUrl(`/api/players/${form.id}`), formData);
+            else await axios.post(getApiUrl('/api/players'), formData);
 
             setForm({ id: null, name: '', category: 'Batsman', auction_set: 'Marquee', base_price: 1000000, is_captain: false, is_icon: false, combo_id: '', combo_display_name: '', photo: null });
             setShowModal(false);
@@ -91,7 +92,7 @@ const Players = () => {
 
     const deletePlayer = async (id) => {
         if (confirm('Are you sure you want to delete this player?')) {
-            await axios.delete(`http://localhost:5000/api/players/${id}`);
+            await axios.delete(getApiUrl(`/api/players/${id}`));
             fetchPlayers();
         }
     };
@@ -108,7 +109,7 @@ const Players = () => {
     const handleCreateCombo = async () => {
         if (!comboForm.id || !comboForm.name) return alert("Please enter Combo ID and Name");
         try {
-            await axios.put('http://localhost:5000/api/players/bulk-update', {
+            await axios.put(getApiUrl('/api/players/bulk-update'), {
                 ids: selectedPlayers,
                 updates: { combo_id: comboForm.id, combo_display_name: comboForm.name }
             });
@@ -133,7 +134,7 @@ const Players = () => {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const res = await axios.post('http://localhost:5000/api/players/import', formData);
+            const res = await axios.post(getApiUrl('/api/players/import'), formData);
             fetchPlayers();
             alert(`✅ ${res.data.message}`);
         } catch (err) {
@@ -288,7 +289,7 @@ const Players = () => {
                                     {combo.players.map(p => (
                                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px' }}>
                                             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#333', overflow: 'hidden', flexShrink: 0 }}>
-                                                {p.image ? <img src={`http://localhost:5000${p.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={20} style={{ margin: '10px' }} />}
+                                                {p.image ? <img src={getImageUrl(p.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={20} style={{ margin: '10px' }} />}
                                             </div>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontWeight: 'bold' }}>{p.name}</div>
@@ -340,7 +341,7 @@ const Players = () => {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#334155', overflow: 'hidden' }}>
                                                     {p.image ? (
-                                                        <img src={`http://localhost:5000${p.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                        <img src={getImageUrl(p.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                                                     ) : <User size={20} style={{ margin: '10px' }} />}
                                                 </div>
                                                 <div>

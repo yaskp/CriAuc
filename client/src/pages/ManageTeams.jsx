@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL, { getApiUrl, getImageUrl } from '../config';
 import socket from '../socket';
 import { Shield, Plus, Edit, Trash2, X, Check, Save, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,7 +29,7 @@ const ManageTeams = () => {
 
     const fetchTeams = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/teams');
+            const res = await axios.get(getApiUrl('/api/teams'));
             setTeams(res.data);
             setLoading(false);
         } catch (err) {
@@ -39,7 +40,7 @@ const ManageTeams = () => {
 
     const fetchConfig = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/config');
+            const res = await axios.get(getApiUrl('/api/config'));
             setConfig(res.data);
             setFormData(prev => ({
                 ...prev,
@@ -89,11 +90,11 @@ const ManageTeams = () => {
 
         try {
             if (editingTeam) {
-                await axios.put(`http://localhost:5000/api/teams/${editingTeam.id}`, data, {
+                await axios.put(getApiUrl(`/api/teams/${editingTeam.id}`), data, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             } else {
-                await axios.post('http://localhost:5000/api/teams', data, {
+                await axios.post(getApiUrl('/api/teams'), data, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }
@@ -107,7 +108,7 @@ const ManageTeams = () => {
     const deleteTeam = async (id) => {
         if (window.confirm("Are you sure? This will delete the team and all its bid history.")) {
             try {
-                await axios.delete(`http://localhost:5000/api/teams/${id}`);
+                await axios.delete(getApiUrl(`/api/teams/${id}`));
                 fetchTeams();
             } catch (err) {
                 alert("Error deleting team");
@@ -139,7 +140,7 @@ const ManageTeams = () => {
                     >
                         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                             <div style={{ width: 60, height: 60, borderRadius: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', padding: '5px' }}>
-                                {team.logo ? <img src={`http://localhost:5000${team.logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Shield size={30} opacity={0.3} color="black" />}
+                                {team.logo ? <img src={getImageUrl(team.logo)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Shield size={30} opacity={0.3} color="black" />}
                             </div>
                             <div style={{ flex: 1 }}>
                                 <h3 style={{ margin: 0 }}>{team.name}</h3>
@@ -234,7 +235,7 @@ const ManageTeams = () => {
                                             </div>
                                         ) : editingTeam && editingTeam.logo ? (
                                             <div style={{ textAlign: 'center', height: '100%', background: 'white', padding: '5px', borderRadius: '8px' }}>
-                                                <img src={`http://localhost:5000${editingTeam.logo}`} style={{ height: '80%', display: 'block', margin: '0 auto' }} />
+                                                <img src={getImageUrl(editingTeam.logo)} style={{ height: '80%', display: 'block', margin: '0 auto' }} />
                                                 <div style={{ fontSize: '0.6rem', opacity: 0.5, color: '#666' }}>Current Logo (Click to Change)</div>
                                             </div>
                                         ) : (
