@@ -3,7 +3,7 @@ import axios from 'axios';
 import socket from '../socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import { User, Wallet, Shield, ShoppingBag, TrendingUp, Info, ArrowLeft, Download, FileText, Image as ImageIcon } from 'lucide-react';
+import { User, Wallet, Shield, ShoppingBag, TrendingUp, Info, ArrowLeft, Download, FileText, Image as ImageIcon, Share2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -215,6 +215,13 @@ const Teams = () => {
                             </button>
 
                             <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={() => window.open(`/public/team/${selectedTeamId}`, '_blank')}
+                                    className="btn btn-secondary"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#60a5fa' }}
+                                >
+                                    <Share2 size={16} /> View Public Page
+                                </button>
                                 <button
                                     onClick={() => handleDownload('image')}
                                     className="btn btn-secondary"
