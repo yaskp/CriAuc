@@ -30,7 +30,7 @@
       - **Region**: Singapore
       - **Branch**: `master`
       - **Root Directory**: `client`
-      - **Build Command**: `npm install && npm run build`
+      - **Build Command**: `npm install && npx vite build`
       - **Publish Directory**: `dist`
    4. Add Environment Variable:
       - `VITE_API_URL` = `https://cricauction-api.onrender.com`
@@ -101,3 +101,9 @@ After deployment:
 - Build command should be: `npm install && npm rebuild sqlite3`
 - This rebuilds SQLite3 native modules for Linux
 - If still failing, try deleting `node_modules` and `package-lock.json` from Git
+
+**Vite "Permission denied" error?**
+- This happens when Vite binary doesn't have execute permissions
+- **Solution**: Use `npx vite build` instead of `npm run build`
+- Build command should be: `npm install && npx vite build`
+- `npx` automatically handles permissions correctly
