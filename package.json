@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "cd client && npm install && npm run build"
+  },
   "dependencies": {
     "html2canvas": "^1.4.1",
     "jspdf": "^4.1.0"
