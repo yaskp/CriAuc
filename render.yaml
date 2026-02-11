@@ -5,7 +5,7 @@ services:
     env: node
     region: singapore
     plan: free
-    buildCommand: cd server && npm install
+    buildCommand: cd server && npm install && npm rebuild sqlite3
     startCommand: cd server && node server.js
     envVars:
       - key: NODE_ENV

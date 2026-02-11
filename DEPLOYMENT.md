@@ -14,7 +14,7 @@
       - **Region**: Singapore (or closest to you)
       - **Branch**: `master`
       - **Root Directory**: `server`
-      - **Build Command**: `npm install`
+      - **Build Command**: `npm install && npm rebuild sqlite3`
       - **Start Command**: `node server.js`
       - **Plan**: Free
    4. Add Environment Variables:
@@ -94,3 +94,10 @@ After deployment:
 - Check build logs in Render dashboard
 - Ensure `package.json` has all dependencies
 - Verify Node version compatibility (use Node 18+)
+
+**SQLite3 "invalid ELF header" error?**
+- This happens when SQLite3 was built on Windows but deployed to Linux
+- **Solution**: Ensure build command includes `npm rebuild sqlite3`
+- Build command should be: `npm install && npm rebuild sqlite3`
+- This rebuilds SQLite3 native modules for Linux
+- If still failing, try deleting `node_modules` and `package-lock.json` from Git
