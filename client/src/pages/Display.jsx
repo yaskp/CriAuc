@@ -17,6 +17,7 @@ const Display = () => {
         base_price: 10000
     });
     const [sponsors, setSponsors] = useState([]);
+    const [teams, setTeams] = useState([]);
 
     // Use a ref to keep track of the current auction state inside the socket listener 
     // without triggering effect re-runs
@@ -70,18 +71,27 @@ const Display = () => {
             }
         };
 
+        const onRefresh = () => {
+            axios.get('http://localhost:5000/api/config').then(res => setConfig(res.data));
+            axios.get('http://localhost:5000/api/sponsors').then(res => setSponsors(res.data));
+            axios.get('http://localhost:5000/api/teams').then(res => setTeams(res.data));
+        };
+
         socket.on('auction_update', onAuctionUpdate);
         socket.on('auction_ended', onAuctionEnded);
+        socket.on('refresh_data', onRefresh);
 
         return () => {
             socket.off('auction_update', onAuctionUpdate);
             socket.off('auction_ended', onAuctionEnded);
+            socket.off('refresh_data', onRefresh);
         };
     }, []);
 
     useEffect(() => {
         axios.get('http://localhost:5000/api/config').then(res => setConfig(res.data));
         axios.get('http://localhost:5000/api/sponsors').then(res => setSponsors(res.data));
+        axios.get('http://localhost:5000/api/teams').then(res => setTeams(res.data));
     }, []);
 
     // Filter Sponsors
@@ -127,6 +137,30 @@ const Display = () => {
         }
     }, [auction.status, auction.player]);
 
+    const MarqueeFooter = () => (
+        <div style={{
+            position: 'fixed', bottom: 0, left: 0, width: '100%',
+            background: 'rgba(255, 255, 255, 0.95)', padding: '12px 0',
+            overflow: 'hidden', whiteSpace: 'nowrap', borderTop: '3px solid #ffd700',
+            zIndex: 1000, boxShadow: '0 -10px 25px rgba(0,0,0,0.2)'
+        }}>
+            <div style={{ display: 'inline-block', animation: 'marquee-display 60s linear infinite' }}>
+                {[...teams, ...sponsors].map((item, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', marginRight: '60px' }}>
+                        <img src={`http://localhost:5000${item.logo}`} style={{ height: 50, marginRight: '15px', objectFit: 'contain' }} alt="" />
+                        <span style={{ color: '#0f172a', fontSize: '1.1rem', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.name}</span>
+                    </span>
+                ))}
+                {[...teams, ...sponsors].map((item, i) => (
+                    <span key={`dup-${i}`} style={{ display: 'inline-flex', alignItems: 'center', marginRight: '60px' }}>
+                        <img src={`http://localhost:5000${item.logo}`} style={{ height: 50, marginRight: '15px', objectFit: 'contain' }} alt="" />
+                        <span style={{ color: '#0f172a', fontSize: '1.1rem', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.name}</span>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+
     if (auction.status === 'lucky_dip') {
         return (
             <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, #1e1b4b 0%, #020617 100%)', color: 'white' }}>
@@ -168,6 +202,13 @@ const Display = () => {
                         </div>
                     )}
                 </motion.div>
+                <MarqueeFooter />
+                <style>{`
+                    @keyframes marquee-display {
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(-50%); }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -177,21 +218,35 @@ const Display = () => {
             // SHOW SOLD SCREEN INSTEAD OF IDLE
             return (
                 <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, #064e3b 0%, #061713 100%)', position: 'relative' }}>
+                    {/* Upper Branding */}
+                    <div style={{ position: 'absolute', top: 40, width: '100%', display: 'flex', justifyContent: 'space-between', padding: '0 50px', alignItems: 'center' }}>
+                        {config?.tournament_logo && <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 100, background: 'white', padding: '10px', borderRadius: '15px' }} />}
+                        {mainSponsor && <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 80, background: 'white', padding: '10px', borderRadius: '15px' }} />}
+                    </div>
+
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ textAlign: 'center' }}>
                         <div style={{ background: '#ffd700', color: 'black', padding: '10px 40px', borderRadius: '50px', fontWeight: 'bold', fontSize: '2rem', marginBottom: '2rem', boxShadow: '0 0 50px gold' }}>
                             SOLD
                         </div>
-                        <div style={{ width: '40vh', height: '40vh', borderRadius: '20px', overflow: 'hidden', margin: '0 auto', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '40vh', height: '40vh', borderRadius: '20px', overflow: 'hidden', margin: '0 auto', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '15px' }}>
                             {lastSold.player.image ? (
                                 <img src={`http://localhost:5000${lastSold.player.image}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                             ) : (
-                                <div style={{ color: 'white', opacity: 0.2 }}><User size={150} /></div>
+                                <div style={{ color: '#0f172a', opacity: 0.1 }}><User size={150} /></div>
                             )}
                         </div>
-                        <h1 style={{ fontSize: '4rem', margin: '1rem 0', color: 'white', textTransform: 'uppercase' }}>{lastSold.player.name}</h1>
-                        <h2 style={{ fontSize: '3rem', color: '#ffd700' }}>{lastSold.team.name}</h2>
-                        <h3 style={{ fontSize: '2rem', color: 'white' }}>{formatMoney(lastSold.price)}</h3>
+                        <h1 style={{ fontSize: '4rem', margin: '1rem 0', color: 'white', textTransform: 'uppercase', fontWeight: '900', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>{lastSold.player.name}</h1>
+                        <h2 style={{ fontSize: '3rem', color: '#ffd700', fontWeight: 'bold' }}>{lastSold.team.name}</h2>
+                        <h3 style={{ fontSize: '2rem', color: 'white', background: 'rgba(0,0,0,0.3)', display: 'inline-block', padding: '10px 30px', borderRadius: '15px', marginTop: '1rem' }}>{formatMoney(lastSold.price)}</h3>
                     </motion.div>
+
+                    <MarqueeFooter />
+                    <style>{`
+                        @keyframes marquee-display {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-50%); }
+                        }
+                    `}</style>
                 </div>
             );
         }
@@ -200,7 +255,7 @@ const Display = () => {
             <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)', overflow: 'hidden' }}>
                 <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 5 }}>
                     {config?.tournament_logo ? (
-                        <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 200, filter: 'drop-shadow(0 0 20px gold)' }} />
+                        <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 200, filter: 'drop-shadow(0 0 20px gold)', background: 'white', padding: '15px', borderRadius: '20px' }} />
                     ) : (
                         <Gavel size={150} color="#ffd700" />
                     )}
@@ -208,11 +263,18 @@ const Display = () => {
                 <h1 style={{ fontSize: '5rem', marginTop: '2rem', textTransform: 'uppercase', letterSpacing: '15px', color: 'white', textShadow: '0 0 20px rgba(255, 215, 0, 0.5)' }}>IPL Auction 2026</h1>
                 <h2 style={{ color: '#94a3b8', letterSpacing: '5px' }}>OFFICIAL BROADCAST</h2>
                 {mainSponsor && (
-                    <div style={{ position: 'absolute', bottom: 100, right: 40, display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <span style={{ color: 'white', opacity: 0.6, fontSize: '0.9rem', textTransform: 'uppercase' }}>Powered By</span>
-                        <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 60 }} />
+                    <div style={{ position: 'absolute', bottom: 120, right: 40, display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <span style={{ color: 'white', opacity: 0.6, fontSize: '0.9rem', textTransform: 'uppercase' }}>Sponsored by</span>
+                        <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 60, background: 'white', padding: '5px', borderRadius: '10px' }} />
                     </div>
                 )}
+                <MarqueeFooter />
+                <style>{`
+                    @keyframes marquee-display {
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(-50%); }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -222,15 +284,15 @@ const Display = () => {
             {/* HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #333', paddingBottom: '1rem', position: 'relative' }}>
                 {config?.tournament_logo && (
-                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 60, marginRight: '20px' }} />
+                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 60, marginRight: '20px', background: 'white', padding: '5px', borderRadius: '8px' }} />
                 )}
                 <div style={{ fontSize: '1.5rem', color: '#ffd700', fontWeight: 'bold', textTransform: 'uppercase', flex: 1 }}>
                     SET: <span style={{ color: 'white' }}>{auction.player.auction_set}</span>
                 </div>
                 {config?.sponsor_logo && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: '20px' }}>
-                        <span style={{ color: 'white', opacity: 0.5, fontSize: '0.8rem' }}>POWERED BY</span>
-                        <img src={`http://localhost:5000${config.sponsor_logo}`} style={{ height: 40 }} />
+                        <span style={{ color: 'white', opacity: 0.5, fontSize: '0.8rem' }}>SPONSORED BY</span>
+                        <img src={`http://localhost:5000${config.sponsor_logo}`} style={{ height: 40, background: 'white', padding: '3px', borderRadius: '6px' }} />
                     </div>
                 )}
                 <div style={{ fontSize: '1.5rem', color: '#fff', fontWeight: 'bold' }}>
@@ -295,7 +357,7 @@ const Display = () => {
                                     initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
                                     style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '20px', borderLeft: '8px solid gold' }}
                                 >
-                                    {lastBidderTeam.logo && <img src={`http://localhost:5000${lastBidderTeam.logo}`} style={{ height: 100 }} />}
+                                    {lastBidderTeam.logo && <img src={`http://localhost:5000${lastBidderTeam.logo}`} style={{ height: 100, background: 'white', padding: '8px', borderRadius: '15px' }} />}
                                     <div>
                                         <div style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Highest Bidder</div>
                                         <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{lastBidderTeam.name}</div>
@@ -342,14 +404,14 @@ const Display = () => {
                 </div>
             </div>
 
-            {/* In-Auction Footer for Sponsors */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '10px', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', gap: '40px' }}>
-                {otherSponsors.slice(0, 10).map(s => (
-                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.5 }}>
-                        <img src={`http://localhost:5000${s.logo}`} style={{ height: 25, filter: 'grayscale(100%) brightness(150%)' }} />
-                    </div>
-                ))}
-            </div>
+            <MarqueeFooter />
+
+            <style>{`
+                @keyframes marquee-display {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+            `}</style>
         </div>
     );
 };

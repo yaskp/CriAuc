@@ -57,8 +57,8 @@ router.post('/import', upload.single('file'), (req, res) => {
 
                 const stmt = db.prepare(`
                     INSERT OR IGNORE INTO players 
-                    (name, category, base_price, auction_set, is_icon, combo_id, combo_display_name, is_captain) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (name, category, base_price, auction_set, is_icon, combo_id, combo_display_name, is_captain, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `);
 
                 results.forEach((row, index) => {
@@ -68,12 +68,21 @@ router.post('/import', upload.single('file'), (req, res) => {
                     const price = row.BasePrice || row.baseprice || row.BASEPRICE || 50000;
                     const set = row.Set || row.set || row.SET || row.AuctionSet || 'Uncapped';
                     const icon = (row.IsIcon || row.isicon || row.ISICON) == '1' ? 1 : 0;
-                    const comboId = row.ComboID || row.combo_id || row.COMBOID || null;
-                    const comboName = row.ComboName || row.combo_display_name || row.COMBONAME || null;
                     const captain = (row.IsCaptain || row.is_captain || row.ISCAPTAIN) == '1' ? 1 : 0;
 
+                    let comboId = row.ComboID || row.combo_id || row.COMBOID || null;
+                    let comboName = row.ComboName || row.combo_display_name || row.COMBONAME || null;
+                    let status = 'unsold';
+
+                    // Enforce rule: Captains and Icons cannot be in combos and are reserved from bidding
+                    if (captain === 1 || icon === 1) {
+                        comboId = null;
+                        comboName = null;
+                        status = 'reserved'; // This removes them from the Admin "unsold" pipeline
+                    }
+
                     if (name && name.trim()) {
-                        stmt.run(name.trim(), cat, price, set, icon, comboId, comboName, captain, function (err) {
+                        stmt.run(name.trim(), cat, price, set, icon, comboId, comboName, captain, status, function (err) {
                             if (err) {
                                 console.error(`❌ Error at row ${index + 1} (${name}):`, err.message);
                                 errors++;
@@ -142,9 +151,19 @@ router.post('/', upload.single('photo'), (req, res) => {
     db.get("SELECT * FROM players WHERE name = ?", [name], (err, row) => {
         if (row) return res.status(409).json({ error: "Player already exists!" });
 
+        let finalComboId = combo_id || null;
+        let finalComboName = combo_display_name || null;
+        let status = 'unsold';
+
+        if (captainVal === 1 || iconVal === 1) {
+            finalComboId = null;
+            finalComboName = null;
+            status = 'reserved';
+        }
+
         db.run(
-            "INSERT INTO players (name, category, auction_set, base_price, image, is_captain, is_icon, combo_id, combo_display_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [name, category, auction_set, base_price, image, captainVal, iconVal, combo_id || null, combo_display_name || null],
+            "INSERT INTO players (name, category, auction_set, base_price, image, is_captain, is_icon, combo_id, combo_display_name, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [name, category, auction_set, base_price, image, captainVal, iconVal, finalComboId, finalComboName, status],
             function (err) {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json({ id: this.lastID, name, category, base_price });
@@ -159,11 +178,24 @@ router.put('/:id', upload.single('photo'), (req, res) => {
     const captainVal = is_captain === 'true' || is_captain === '1' ? 1 : 0;
     const iconVal = is_icon === 'true' || is_icon === '1' ? 1 : 0;
 
-    db.get("SELECT image FROM players WHERE id = ?", [id], (err, row) => {
+    db.get("SELECT image, status FROM players WHERE id = ?", [id], (err, row) => {
+        if (err || !row) return res.status(404).json({ error: "Player not found" });
         const image = req.file ? `/uploads/${req.file.filename}` : row.image;
+
+        let finalComboId = combo_id || null;
+        let finalComboName = combo_display_name || null;
+        let finalStatus = row.status;
+
+        if (captainVal === 1 || iconVal === 1) {
+            finalComboId = null;
+            finalComboName = null;
+            // If the player was in the pipeline (unsold), move them to reserved
+            if (finalStatus === 'unsold') finalStatus = 'reserved';
+        }
+
         db.run(
-            "UPDATE players SET name=?, category=?, auction_set=?, base_price=?, is_captain=?, is_icon=?, combo_id=?, combo_display_name=?, image=? WHERE id=?",
-            [name, category, auction_set, base_price, captainVal, iconVal, combo_id || null, combo_display_name || null, image, id],
+            "UPDATE players SET name=?, category=?, auction_set=?, base_price=?, is_captain=?, is_icon=?, combo_id=?, combo_display_name=?, image=?, status=? WHERE id=?",
+            [name, category, auction_set, base_price, captainVal, iconVal, finalComboId, finalComboName, image, finalStatus, id],
             (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json({ message: "Updated" });

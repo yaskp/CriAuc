@@ -29,19 +29,19 @@ router.get('/:id/squad', (req, res) => {
 
 // Add Team (Multiple files)
 router.post('/', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'sponsor_logo', maxCount: 1 }]), (req, res) => {
-    const { name, budget } = req.body;
+    const { name, budget, captain_name, owner_name } = req.body;
     const logo = req.files['logo'] ? `/uploads/${req.files['logo'][0].filename}` : null;
     const sponsor = req.files['sponsor_logo'] ? `/uploads/${req.files['sponsor_logo'][0].filename}` : null;
 
-    db.run("INSERT INTO teams (name, budget, logo, sponsor_logo) VALUES (?, ?, ?, ?)", [name, budget, logo, sponsor], function (err) {
+    db.run("INSERT INTO teams (name, budget, logo, sponsor_logo, captain_name, owner_name) VALUES (?, ?, ?, ?, ?, ?)", [name, budget, logo, sponsor, captain_name, owner_name], function (err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID, name, budget });
+        res.json({ id: this.lastID, name, budget, captain_name, owner_name });
     });
 });
 
 // Edit Team
 router.put('/:id', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'sponsor_logo', maxCount: 1 }]), (req, res) => {
-    const { name, budget } = req.body;
+    const { name, budget, captain_name, owner_name } = req.body;
     const { id } = req.params;
 
     // First get existing to keep files if not replaced
@@ -51,13 +51,25 @@ router.put('/:id', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'sponso
         const logo = req.files['logo'] ? `/uploads/${req.files['logo'][0].filename}` : row.logo;
         const sponsor = req.files['sponsor_logo'] ? `/uploads/${req.files['sponsor_logo'][0].filename}` : row.sponsor_logo;
 
-        db.run("UPDATE teams SET name = ?, budget = ?, logo = ?, sponsor_logo = ? WHERE id = ?",
-            [name, budget, logo, sponsor, id],
+        db.run("UPDATE teams SET name = ?, budget = ?, logo = ?, sponsor_logo = ?, captain_name = ?, owner_name = ? WHERE id = ?",
+            [name, budget, logo, sponsor, captain_name, owner_name, id],
             (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json({ message: "Team Updated" });
             }
         );
+    });
+});
+
+// Delete Team
+router.delete('/:id', (req, res) => {
+    db.run("DELETE FROM teams WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const io = req.app.get('socketio');
+        if (io) io.emit('refresh_data');
+
+        res.json({ message: "Team deleted successfully" });
     });
 });
 

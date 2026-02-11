@@ -125,9 +125,10 @@ io.on('connection', (socket) => {
     socket.on('place_bid', ({ teamId, teamName, amount }) => {
         console.log(`💰 BID RECEIVED: ${teamName} - ${amount}`);
 
-        const isSameTeamSamePrice = currentAuction.highestBidder?.teamId === teamId && amount === currentAuction.currentBid;
+        const isSameTeam = currentAuction.highestBidder?.teamId === teamId;
+        const isValidAmount = amount > currentAuction.currentBid || (!currentAuction.highestBidder && amount === currentAuction.currentBid);
 
-        if (currentAuction.status === 'bidding' && amount >= currentAuction.currentBid && !isSameTeamSamePrice) {
+        if (currentAuction.status === 'bidding' && isValidAmount && !isSameTeam) {
             currentAuction.currentBid = amount;
             currentAuction.highestBidder = { teamId, teamName };
 

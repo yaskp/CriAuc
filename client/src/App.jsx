@@ -7,7 +7,8 @@ import Display from './pages/Display';
 import Leaderboard from './pages/Leaderboard';
 import Players from './pages/Players';
 import Settings from './pages/Settings';
-import { Gavel, Users, Shield, Tv, BarChart3, ListChecks, Settings as SettingsIcon } from 'lucide-react';
+import ManageTeams from './pages/ManageTeams';
+import { Gavel, Users, Shield, Tv, BarChart3, ListChecks, Settings as SettingsIcon, Flag } from 'lucide-react';
 
 const NavBar = () => {
     const location = useLocation();
@@ -52,6 +53,11 @@ const NavBar = () => {
                     </Link>
                 </li>
                 <li>
+                    <Link to="/manage-teams" className={location.pathname === '/manage-teams' ? 'active' : ''}>
+                        <Flag size={18} style={{ marginBottom: '-2px' }} /> Manage Teams
+                    </Link>
+                </li>
+                <li>
                     <Link to="/settings" className={location.pathname === '/settings' ? 'active' : ''}>
                         <SettingsIcon size={18} style={{ marginBottom: '-2px' }} /> Settings
                     </Link>
@@ -73,6 +79,8 @@ function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/registry" element={<Players />} />
                     <Route path="/teams" element={<Teams />} />
+                    <Route path="/teams/:teamId" element={<Teams />} />
+                    <Route path="/manage-teams" element={<ManageTeams />} />
                     <Route path="/settings" element={<Settings />} />
                 </Routes>
             </div>

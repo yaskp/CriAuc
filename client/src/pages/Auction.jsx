@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gavel, Star, Crown, LayoutDashboard, RefreshCcw, Shuffle, User } from 'lucide-react';
+import { Gavel, Star, Crown, LayoutDashboard, RefreshCcw, Shuffle, User, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -95,20 +95,28 @@ const Auction = () => {
         console.log("🎯 Auction State:", { currentBid, basePrice, highestBidder: auction.highestBidder, status: auction.status });
 
 
-        // Logic: If nobody has bid yet (highestBidder is null), the first bid is the Base Price.
+        // Logic: If nobody has bid yet (highestBidder is null), the first bid is the current starting price.
         let nextBid;
         if (!auction.highestBidder) {
-            nextBid = basePrice;
+            nextBid = currentBid;
         } else {
             // Multi-tier increment logic
             let increment;
-            if (currentBid < config.tier1_threshold) {
-                increment = config.tier1_increment;
-            } else if (currentBid < config.tier2_threshold) {
-                increment = config.tier2_increment;
+            const t1 = Number(config.tier1_threshold);
+            const t2 = Number(config.tier2_threshold);
+            const i1 = Number(config.tier1_increment);
+            const i2 = Number(config.tier2_increment);
+            const i3 = Number(config.tier3_increment) || i2;
+
+            if (currentBid <= t1) {
+                increment = i1;
+            } else if (currentBid <= t2) {
+                increment = i2;
             } else {
-                increment = config.tier3_increment;
+                increment = i3;
             }
+
+            console.log(`📊 Bidding Logic: Current(${currentBid}) <= T1(${t1})? ${currentBid <= t1}. Increment: ${increment}`);
             nextBid = currentBid + increment;
         }
 
@@ -236,7 +244,7 @@ const Auction = () => {
             {/* Header / Status */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 {config.tournament_logo && (
-                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 50, marginRight: '15px' }} alt="Tournament Logo" />
+                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: 50, marginRight: '15px', background: 'white', padding: '5px', borderRadius: '8px' }} alt="Tournament Logo" />
                 )}
 
                 <div style={{ background: '#1e293b', padding: '10px 20px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #333', flex: 1 }}>
@@ -246,7 +254,7 @@ const Auction = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', marginLeft: '15px', gap: '15px' }}>
                     {mainSponsor && (
-                        <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 40 }} alt="Sponsor Logo" />
+                        <img src={`http://localhost:5000${mainSponsor.logo}`} style={{ height: 40, background: 'white', padding: '4px', borderRadius: '6px' }} alt="Sponsor Logo" />
                     )}
                     <div style={{ color: isConnected ? '#22c55e' : '#ef4444', fontSize: '1rem', marginTop: '-2px' }}>
                         {isConnected ? '●' : '○'}
@@ -330,25 +338,65 @@ const Auction = () => {
                     {/* Team Grid Buttons */}
                     <div className="glass-card" style={{ flex: 1, padding: '15px', overflowY: 'auto' }}>
                         <h3 style={{ color: '#94a3b8', textAlign: 'center', marginBottom: '15px', fontSize: '0.8rem', letterSpacing: '2px' }}>CLICK TEAM TO BID</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
                             {teams.map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => handleBid(t)}
                                     disabled={lastBidderTeam?.id === t.id}
                                     style={{
-                                        padding: '10px 5px', borderRadius: '10px', border: '1px solid #334155',
-                                        background: lastBidderTeam?.id === t.id ? '#22c55e' : '#1e293b',
-                                        color: 'white', cursor: lastBidderTeam?.id === t.id ? 'default' : 'pointer',
-                                        opacity: lastBidderTeam?.id === t.id ? 1 : 0.8,
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                                        transition: 'all 0.1s',
-                                        height: '75px'
+                                        padding: '12px 8px',
+                                        borderRadius: '15px',
+                                        border: lastBidderTeam?.id === t.id ? '2px solid #22c55e' : '1px solid #334155',
+                                        background: lastBidderTeam?.id === t.id ? 'rgba(34, 197, 94, 0.2)' : 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                                        color: 'white',
+                                        cursor: lastBidderTeam?.id === t.id ? 'default' : 'pointer',
+                                        opacity: 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        transition: 'all 0.2s ease',
+                                        height: '110px',
+                                        boxShadow: lastBidderTeam?.id === t.id ? '0 0 20px rgba(34, 197, 94, 0.2)' : '0 4px 6px rgba(0,0,0,0.2)',
+                                        transform: lastBidderTeam?.id === t.id ? 'scale(1.05)' : 'scale(1)'
                                     }}
                                 >
-                                    {t.logo ? <img src={`http://localhost:5000${t.logo}`} style={{ height: 25, objectFit: 'contain' }} /> : <div style={{ fontSize: '0.8rem' }}>{t.name.substring(0, 3)}</div>}
-                                    <div style={{ fontSize: '0.65rem', color: '#ffd700', fontWeight: 'bold' }}>
-                                        + ₹{(auction.currentBid < config.tier1_threshold ? config.tier1_increment : auction.currentBid < config.tier2_threshold ? config.tier2_increment : config.tier3_increment).toLocaleString()}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', justifyContent: 'center' }}>
+                                        <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '8px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            {t.logo ? (
+                                                <img src={`http://localhost:5000${t.logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : (
+                                                <Shield size={20} color="#1e293b" />
+                                            )}
+                                        </div>
+                                        <div style={{
+                                            fontSize: '0.9rem',
+                                            fontWeight: '800',
+                                            textAlign: 'left',
+                                            lineHeight: '1.2',
+                                            overflow: 'hidden',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            color: lastBidderTeam?.id === t.id ? '#22c55e' : 'white'
+                                        }}>
+                                            {t.name}
+                                        </div>
+                                    </div>
+                                    <div style={{
+                                        width: '100%',
+                                        background: lastBidderTeam?.id === t.id ? '#22c55e' : 'rgba(255, 215, 0, 0.15)',
+                                        color: lastBidderTeam?.id === t.id ? 'white' : '#ffd700',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '900',
+                                        padding: '4px 0',
+                                        borderRadius: '6px',
+                                        textAlign: 'center',
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        {!auction.highestBidder ? 'OPEN BID' : `+ ₹${(Number(auction.currentBid) <= Number(config.tier1_threshold) ? config.tier1_increment : Number(auction.currentBid) <= Number(config.tier2_threshold) ? config.tier2_increment : (Number(config.tier3_increment) || config.tier2_increment)).toLocaleString()}`}
                                     </div>
                                 </button>
                             ))}

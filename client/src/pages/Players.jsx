@@ -256,6 +256,7 @@ const Players = () => {
                         <option value="All">All Status</option>
                         <option value="Sold">Sold</option>
                         <option value="Unsold">Unsold</option>
+                        <option value="Reserved">Reserved</option>
                     </select>
                 </div>
                 <div style={{ marginLeft: 'auto', fontWeight: 'bold', color: 'var(--primary)' }}>
@@ -357,9 +358,13 @@ const Players = () => {
                                         <td style={{ padding: '15px', fontWeight: 'bold' }}>{formatMoney(p.base_price)}</td>
                                         <td style={{ padding: '15px', opacity: 0.6 }}>{p.auction_set}</td>
                                         <td style={{ padding: '15px' }}>
-                                            <span className={`badge ${p.status === 'sold' ? 'badge-success' : 'badge-secondary'}`} style={{
-                                                background: p.status === 'sold' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.05)',
-                                                color: p.status === 'sold' ? '#22c55e' : '#94a3b8'
+                                            <span className={`badge ${p.status === 'sold' ? 'badge-success' : p.status === 'reserved' ? 'badge-warning' : 'badge-secondary'}`} style={{
+                                                background: p.status === 'sold' ? 'rgba(34, 197, 94, 0.1)' :
+                                                    p.status === 'reserved' ? 'rgba(234, 179, 8, 0.1)' :
+                                                        'rgba(255,255,255,0.05)',
+                                                color: p.status === 'sold' ? '#22c55e' :
+                                                    p.status === 'reserved' ? '#eab308' :
+                                                        '#94a3b8'
                                             }}>
                                                 {p.status.toUpperCase()}
                                             </span>
@@ -509,11 +514,35 @@ const Players = () => {
 
                                 <div style={{ display: 'flex', gap: '20px', background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: 0 }}>
-                                        <input type="checkbox" checked={form.is_captain} onChange={e => setForm({ ...form, is_captain: e.target.checked })} />
+                                        <input
+                                            type="checkbox"
+                                            checked={form.is_captain}
+                                            onChange={e => {
+                                                const checked = e.target.checked;
+                                                setForm({
+                                                    ...form,
+                                                    is_captain: checked,
+                                                    combo_id: checked ? '' : form.combo_id,
+                                                    combo_display_name: checked ? '' : form.combo_display_name
+                                                });
+                                            }}
+                                        />
                                         <Shield size={16} color="#34d399" /> <span style={{ color: 'var(--text)', fontWeight: '500', fontSize: '0.9rem' }}>Captain</span>
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: 0 }}>
-                                        <input type="checkbox" checked={form.is_icon} onChange={e => setForm({ ...form, is_icon: e.target.checked })} />
+                                        <input
+                                            type="checkbox"
+                                            checked={form.is_icon}
+                                            onChange={e => {
+                                                const checked = e.target.checked;
+                                                setForm({
+                                                    ...form,
+                                                    is_icon: checked,
+                                                    combo_id: checked ? '' : form.combo_id,
+                                                    combo_display_name: checked ? '' : form.combo_display_name
+                                                });
+                                            }}
+                                        />
                                         <Star size={16} color="gold" /> <span style={{ color: 'var(--text)', fontWeight: '500', fontSize: '0.9rem' }}>Icon</span>
                                     </label>
                                 </div>

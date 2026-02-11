@@ -59,6 +59,12 @@ db.serialize(() => {
     if (!rows.some(r => r.name === 'sponsor_logo')) {
       db.run("ALTER TABLE teams ADD COLUMN sponsor_logo TEXT");
     }
+    if (!rows.some(r => r.name === 'captain_name')) {
+      db.run("ALTER TABLE teams ADD COLUMN captain_name TEXT");
+    }
+    if (!rows.some(r => r.name === 'owner_name')) {
+      db.run("ALTER TABLE teams ADD COLUMN owner_name TEXT");
+    }
   });
 
   // Enhanced Auction Config Table with Combo System

@@ -14,11 +14,14 @@ const Settings = () => {
         tier1_increment: 1000,
         tier2_threshold: 20000,
         tier2_increment: 2000,
-        tier1_increment: 1000,
-        tier2_threshold: 20000,
-        tier2_increment: 2000,
         tier3_increment: 5000,
-        sponsor_logo: null
+        combo_mode: 0,
+        combo_size: 2,
+        combo_base_price_mode: 'per_combo',
+        has_captain_player: 0,
+        captain_price: 0,
+        sponsor_logo: null,
+        tournament_logo: null
     });
     const [logoFiles, setLogoFiles] = useState({ tournament: null, sponsor: null });
     const [sponsors, setSponsors] = useState([]);
@@ -198,59 +201,40 @@ const Settings = () => {
     // --- Calculation Logic ---
     const calculateReservedBudget = () => {
         let reserved = 0;
-        const squadSize = config.squad_size || 0;
-        const basePrice = config.base_price || 0;
-        const comboSize = config.combo_size || 2;
+        const itemsToBuy = Number(config.squad_size) || 0;
+        const basePrice = Number(config.base_price) || 0;
+        const comboSize = Number(config.combo_size) || 2;
 
-        // 1. Calculate reserved for Squad Players
         if (config.combo_mode === 1) {
             if (config.combo_base_price_mode === 'per_combo') {
-                // Example: 6 combos * 5000 per combo
-                reserved += (squadSize / comboSize) * basePrice;
+                reserved += itemsToBuy * basePrice;
             } else {
-                // 'per_player': 12 players * 5000
-                reserved += squadSize * basePrice;
+                reserved += (itemsToBuy * comboSize) * basePrice;
             }
         } else {
-            // Individual Mode
-            reserved += squadSize * basePrice;
+            reserved += itemsToBuy * basePrice;
         }
 
-        // 2. Add Captain Price
         if (config.has_captain_player === 1) {
-            reserved += (config.captain_price || 0);
+            reserved += (Number(config.captain_price) || 0);
         }
-
-        // 3. Sponsor is typically free in this logic, but if we had a price we'd add it here
 
         return reserved;
     };
 
     const reservedBudget = calculateReservedBudget();
-    const maxAvailableForFirst = (config.default_team_budget || 0) - reservedBudget + (config.combo_mode === 1 && config.combo_base_price_mode === 'per_combo' ? config.base_price : config.base_price);
-    // Note: The logic for "Max Available for 1st Player" assumes you need to keep money for (Total items - 1) items.
-    // If buying combos, "1st Player" implies "1st Buy" (which is a combo).
-    // Correct logic: Total Budget - (Cost of (N-1) items).
-    // Items count:
-    // Individual: squad_size
-    // Combo: squad_size / combo_size
 
-    // Let's refine maxAvailable calculation
-    let numberOfPurchasableItems = config.combo_mode === 1 ? (config.squad_size / config.combo_size) : config.squad_size;
-    let costPerItem = config.base_price; // In per_combo mode this is correct. In per_player mode, item cost is base_price * combo_size
+    // Calculate Max Available for the first auction item
+    const totalBudget = Number(config.default_team_budget) || 0;
+    const captainCost = config.has_captain_player === 1 ? (Number(config.captain_price) || 0) : 0;
+
+    let costPerItem = Number(config.base_price);
     if (config.combo_mode === 1 && config.combo_base_price_mode === 'per_player') {
-        costPerItem = config.base_price * config.combo_size;
+        costPerItem = Number(config.base_price) * (Number(config.combo_size) || 2);
     }
 
-    const reservedForOthers = (numberOfPurchasableItems - 1) * costPerItem;
-    // We also must reserve for captain if he's not the first buy (but captain is pre-assigned usually, so cost is just deducted)
-    // Actually, "Max Bid" usually means for the first *auctioned* item.
-    // So Reserved = (Captain Cost) + ( (Total Auction Items - 1) * Base Price per Item )
-    // Max Available = Team Budget - (Captain Cost) - ( (Total Auction Items - 1) * Base Price per Item )
-
-    const totalBudget = config.default_team_budget || 0;
-    const captainCost = config.has_captain_player === 1 ? (config.captain_price || 0) : 0;
-
+    const itemsToReserveFor = Math.max(0, (Number(config.squad_size) || 1) - 1);
+    const reservedForOthers = itemsToReserveFor * costPerItem;
     const maxAvailable = totalBudget - captainCost - reservedForOthers;
 
     return (
@@ -276,27 +260,47 @@ const Settings = () => {
                     <div className="form-group">
                         <label>🏆 Tournament Logo</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            {config.tournament_logo && (
-                                <img src={`http://localhost:5000${config.tournament_logo}`} style={{ height: '60px', borderRadius: '5px', border: '1px solid #444' }} />
-                            )}
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={e => setLogoFiles(prev => ({ ...prev, tournament: e.target.files[0] }))}
-                            />
+                            <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: 'white', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '5px' }}>
+                                {logoFiles.tournament ? (
+                                    <img src={URL.createObjectURL(logoFiles.tournament)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                ) : config.tournament_logo ? (
+                                    <img src={`http://localhost:5000${config.tournament_logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                ) : (
+                                    <div style={{ opacity: 0.2, fontSize: '0.7rem' }}>No Logo</div>
+                                )}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => setLogoFiles(prev => ({ ...prev, tournament: e.target.files[0] }))}
+                                    style={{ fontSize: '0.8rem' }}
+                                />
+                                <div style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '5px' }}>Recommended: PNG with transparency</div>
+                            </div>
                         </div>
                     </div>
                     <div className="form-group">
                         <label>🤝 Sponsor Logo</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            {config.sponsor_logo && (
-                                <img src={`http://localhost:5000${config.sponsor_logo}`} style={{ height: '60px', borderRadius: '5px', border: '1px solid #444' }} />
-                            )}
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={e => setLogoFiles(prev => ({ ...prev, sponsor: e.target.files[0] }))}
-                            />
+                            <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: 'white', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '5px' }}>
+                                {logoFiles.sponsor ? (
+                                    <img src={URL.createObjectURL(logoFiles.sponsor)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                ) : config.sponsor_logo ? (
+                                    <img src={`http://localhost:5000${config.sponsor_logo}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                ) : (
+                                    <div style={{ opacity: 0.2, fontSize: '0.7rem' }}>No Logo</div>
+                                )}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => setLogoFiles(prev => ({ ...prev, sponsor: e.target.files[0] }))}
+                                    style={{ fontSize: '0.8rem' }}
+                                />
+                                <div style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '5px' }}>Shows on Projector screen</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -344,14 +348,14 @@ const Settings = () => {
                     {/* Sponsors List */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' }}>
                         {sponsors.map(sp => (
-                            <div key={sp.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', position: 'relative', textAlign: 'center' }}>
+                            <div key={sp.id} style={{ background: 'white', padding: '10px', borderRadius: '10px', position: 'relative', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
                                 <button
                                     onClick={() => handleDeleteSponsor(sp.id)}
                                     style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(0,0,0,0.5)', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >×</button>
                                 <img src={`http://localhost:5000${sp.logo}`} style={{ height: '60px', maxWidth: '100%', objectFit: 'contain', marginBottom: '10px' }} />
-                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{sp.name}</div>
-                                <div style={{ fontSize: '0.7rem', opacity: 0.6, textTransform: 'uppercase' }}>{sp.type}</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#0f172a' }}>{sp.name}</div>
+                                <div style={{ fontSize: '0.7rem', opacity: 0.6, textTransform: 'uppercase', color: '#64748b' }}>{sp.type}</div>
                             </div>
                         ))}
                     </div>
@@ -638,10 +642,17 @@ const Settings = () => {
                 {/* Explanation */}
                 <div style={{ marginTop: '1.5rem', padding: '15px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '10px', fontSize: '0.85rem', lineHeight: '1.6' }}>
                     <strong style={{ color: '#3b82f6' }}>📖 How Multi-Tier Bidding Works:</strong><br />
-                    • <strong>Tier 1:</strong> Base price to ₹{formatNumber(config.tier1_threshold)} → Increment: ₹{formatNumber(config.tier1_increment)}<br />
-                    • <strong>Tier 2:</strong> ₹{formatNumber(config.tier1_threshold)} to ₹{formatNumber(config.tier2_threshold)} → Increment: ₹{formatNumber(config.tier2_increment)}<br />
-                    • <strong>Tier 3:</strong> Above ₹{formatNumber(config.tier2_threshold)} → Increment: ₹{formatNumber(config.tier3_increment)}<br /><br />
-                    <strong>Example:</strong> Base ₹{formatNumber(config.base_price)} → ₹{formatNumber((config.base_price || 0) + (config.tier1_increment || 0))} (+{formatNumber(config.tier1_increment)}) → ... → ₹{formatNumber(config.tier1_threshold)} → ₹{formatNumber((config.tier1_threshold || 0) + (config.tier2_increment || 0))} (+{formatNumber(config.tier2_increment)}) → ... → ₹{formatNumber(config.tier2_threshold)} → ₹{formatNumber((config.tier2_threshold || 0) + (config.tier3_increment || 0))} (+{formatNumber(config.tier3_increment)})
+                    • <strong>Tier 1:</strong> Up to ₹{formatNumber(config.tier1_threshold)} → Increment: ₹{formatNumber(config.tier1_increment)}<br />
+                    • <strong>Tier 2:</strong> Up to ₹{formatNumber(config.tier2_threshold)} → Increment: ₹{formatNumber(config.tier2_increment)}<br />
+                    • <strong>Tier 3:</strong> Above ₹{formatNumber(config.tier2_threshold)} → Increment: ₹{Number(config.tier3_increment) > 0 ? formatNumber(config.tier3_increment) : formatNumber(config.tier2_increment)}<br /><br />
+
+                    <strong>Example:</strong> Base ₹{formatNumber(config.base_price)}
+                    {Number(config.base_price) <= Number(config.tier1_threshold)
+                        ? ` → ₹${formatNumber(Number(config.base_price) + Number(config.tier1_increment))} (+${formatNumber(config.tier1_increment)})`
+                        : ` → ₹${formatNumber(Number(config.base_price) + Number(config.tier2_increment))} (+${formatNumber(config.tier2_increment)})`
+                    }
+                    → ... → At ₹{formatNumber(config.tier1_threshold)}, next bid uses Tier 1 increment ({formatNumber(config.tier1_increment)})
+                    → At ₹{formatNumber(config.tier2_threshold)}, next bid uses Tier 2 increment ({formatNumber(config.tier2_increment)})
                 </div>
 
                 {/* Save Button */}
