@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import Auction from './pages/Auction';
 import Admin from './pages/Admin';
 import Teams from './pages/Teams';
@@ -10,14 +10,16 @@ import Settings from './pages/Settings';
 import ManageTeams from './pages/ManageTeams';
 import PublicLeaderboard from './pages/PublicLeaderboard';
 import PublicTeamView from './pages/PublicTeamView';
-import { Gavel, Users, Shield, Tv, BarChart3, ListChecks, Settings as SettingsIcon, Flag } from 'lucide-react';
+import Login from './pages/Login';
+import { Gavel, Users, Shield, Tv, BarChart3, ListChecks, Settings as SettingsIcon, Flag, LogOut } from 'lucide-react';
 
-const NavBar = () => {
+const NavBar = ({ onLogout }) => {
     const location = useLocation();
 
-    // Hide Navbar on Display, Leaderboard, and Public Screens
+    // Hide Navbar on Display, Leaderboard, Public Screens, and Login
     if (location.pathname === '/display' ||
         location.pathname === '/leaderboard' ||
+        location.pathname === '/login' ||
         location.pathname.startsWith('/public/')) return null;
 
     return (
@@ -66,28 +68,77 @@ const NavBar = () => {
                         <SettingsIcon size={18} style={{ marginBottom: '-2px' }} /> Settings
                     </Link>
                 </li>
+                <li>
+                    <button
+                        onClick={onLogout}
+                        style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#ef4444',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.9rem',
+                            fontWeight: '500'
+                        }}
+                    >
+                        <LogOut size={16} /> Logout
+                    </button>
+                </li>
             </ul>
         </nav>
     );
 };
 
+// Protected Route Component
+const ProtectedRoute = ({ children, isAuthenticated }) => {
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
 function App() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    useEffect(() => {
+        // Check if user is already logged in
+        const authStatus = localStorage.getItem('isAuthenticated');
+        setIsAuthenticated(authStatus === 'true');
+    }, []);
+
+    const handleLogin = () => {
+        setIsAuthenticated(true);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
+        setIsAuthenticated(false);
+        window.location.href = '/login';
+    };
+
     return (
         <Router>
-            <NavBar />
+            <NavBar onLogout={handleLogout} />
             <div style={{ paddingBottom: '3rem' }}>
                 <Routes>
-                    <Route path="/" element={<Auction />} />
+                    {/* Login Route */}
+                    <Route path="/login" element={<Login onLogin={handleLogin} />} />
+
+                    {/* Protected Admin Routes */}
+                    <Route path="/" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Auction /></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Admin /></ProtectedRoute>} />
+                    <Route path="/registry" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Players /></ProtectedRoute>} />
+                    <Route path="/teams" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Teams /></ProtectedRoute>} />
+                    <Route path="/teams/:teamId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Teams /></ProtectedRoute>} />
+                    <Route path="/manage-teams" element={<ProtectedRoute isAuthenticated={isAuthenticated}><ManageTeams /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Settings /></ProtectedRoute>} />
+
+                    {/* Display and Leaderboard - Can be protected or public based on your preference */}
                     <Route path="/display" element={<Display />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/registry" element={<Players />} />
-                    <Route path="/teams" element={<Teams />} />
-                    <Route path="/teams/:teamId" element={<Teams />} />
-                    <Route path="/manage-teams" element={<ManageTeams />} />
-                    <Route path="/settings" element={<Settings />} />
 
-                    {/* Public Routes */}
+                    {/* Public Routes - Always Accessible */}
                     <Route path="/public/leaderboard" element={<PublicLeaderboard />} />
                     <Route path="/public/team/:teamId" element={<PublicTeamView />} />
                 </Routes>
