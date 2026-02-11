@@ -1,0 +1,316 @@
+:root {
+    --primary: #1a237e;
+    --primary-light: #534bae;
+    --primary-dark: #000051;
+    --secondary: #ffd700;
+    --accent: #ff4081;
+    --bg: #0f172a;
+    --card-bg: #1e293b;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --glass: rgba(255, 255, 255, 0.05);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Glassmorphism */
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Typography */
+h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 2rem;
+    color: var(--secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 0 20px rgba(26, 35, 126, 0.5);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    color: var(--primary-dark);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+/* Navigation */
+nav {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+nav .logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--secondary);
+}
+
+nav ul {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+}
+
+nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+nav a:hover,
+nav a.active {
+    color: var(--secondary);
+}
+
+/* Grid Layouts */
+.grid {
+    display: grid;
+    gap: 2rem;
+}
+
+.grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 768px) {
+
+    .grid-3,
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Player Card */
+.player-card {
+    text-align: center;
+}
+
+.player-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--secondary);
+    margin-bottom: 1rem;
+}
+
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.badge-Batsman {
+    background: #3b82f6;
+}
+
+.badge-Bowler {
+    background: #ef4444;
+}
+
+.badge-All-rounder {
+    background: #a855f7;
+}
+
+/* Bidding Area */
+.bid-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.current-bid-display {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--success);
+}
+
+/* Form Elements - Enhanced Visibility */
+.input-field,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1.5px solid rgba(148, 163, 184, 0.3);
+    color: var(--text);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.input-field:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--secondary);
+    background: rgba(30, 41, 59, 1);
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+}
+
+.input-field::placeholder,
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Select Dropdown - Premium Styling */
+select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px;
+    padding-right: 3rem;
+}
+
+select option {
+    background: var(--card-bg);
+    color: var(--text);
+    padding: 0.8rem;
+    font-weight: 500;
+}
+
+/* Checkbox Styling */
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--secondary);
+    border-radius: 4px;
+}
+
+/* File Input */
+input[type="file"] {
+    padding: 0.6rem;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1.5px dashed rgba(148, 163, 184, 0.3);
+    border-radius: 10px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+    border-color: var(--secondary);
+    background: rgba(30, 41, 59, 0.8);
+}
+
+/* Label Styling */
+label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+    letter-spacing: 0.5px;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+/* Modal Overlay Enhancement */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
