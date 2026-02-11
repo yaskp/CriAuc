@@ -32,4 +32,4 @@ services:
         value: public, max-age=0, must-revalidate
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: https://cricauction-api.onrender.com
