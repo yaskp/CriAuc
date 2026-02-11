@@ -8,13 +8,17 @@ import Leaderboard from './pages/Leaderboard';
 import Players from './pages/Players';
 import Settings from './pages/Settings';
 import ManageTeams from './pages/ManageTeams';
+import PublicLeaderboard from './pages/PublicLeaderboard';
+import PublicTeamView from './pages/PublicTeamView';
 import { Gavel, Users, Shield, Tv, BarChart3, ListChecks, Settings as SettingsIcon, Flag } from 'lucide-react';
 
 const NavBar = () => {
     const location = useLocation();
 
-    // Hide Navbar on Display and Leaderboard Screens
-    if (location.pathname === '/display' || location.pathname === '/leaderboard') return null;
+    // Hide Navbar on Display, Leaderboard, and Public Screens
+    if (location.pathname === '/display' ||
+        location.pathname === '/leaderboard' ||
+        location.pathname.startsWith('/public/')) return null;
 
     return (
         <nav>
@@ -82,6 +86,10 @@ function App() {
                     <Route path="/teams/:teamId" element={<Teams />} />
                     <Route path="/manage-teams" element={<ManageTeams />} />
                     <Route path="/settings" element={<Settings />} />
+
+                    {/* Public Routes */}
+                    <Route path="/public/leaderboard" element={<PublicLeaderboard />} />
+                    <Route path="/public/team/:teamId" element={<PublicTeamView />} />
                 </Routes>
             </div>
         </Router>
