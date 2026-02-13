@@ -14,6 +14,7 @@ const Auction = () => {
     const [players, setPlayers] = useState([]);
     const [lastBidderTeam, setLastBidderTeam] = useState(null);
     const [lastSoldPlayer, setLastSoldPlayer] = useState(null); // Track last sold player
+    const [errorMessage, setErrorMessage] = useState(null);
     const [config, setConfig] = useState({
         tier1_threshold: 10000,
         tier1_increment: 2000,
@@ -47,6 +48,7 @@ const Auction = () => {
 
             if (data.status === 'sold' || data.status === 'unsold') {
                 fetchTeams();
+                fetchPlayers(); // Refresh player list to update 'status' for Lucky Dip logic
                 if (data.status === 'sold' && data.player && data.highestBidder) {
                     setLastSoldPlayer({
                         player: data.player,
@@ -84,46 +86,77 @@ const Auction = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const onServerError = (err) => {
+            setErrorMessage(err.message);
+            // Auto hide after 5 seconds
+            setTimeout(() => setErrorMessage(null), 5000);
+        };
+        socket.on('error', onServerError);
+        return () => socket.off('error', onServerError);
+    }, []);
+
     const handleBid = (team) => {
         if (!auction.player) return;
 
         // Force Number Types to prevent string concatenation errors
         const currentBid = Number(auction.currentBid);
-        const basePrice = Number(auction.player.base_price);
         const teamBudget = Number(team.budget);
 
-        console.log(`Bid Attempt: Team ${team.name} (${teamBudget}) vs Current ${currentBid}`);
-        console.log("🎯 Auction State:", { currentBid, basePrice, highestBidder: auction.highestBidder, status: auction.status });
+        // Calculate next bid increment
+        let increment;
+        const t1 = Number(config.tier1_threshold);
+        const t2 = Number(config.tier2_threshold);
+        const i1 = Number(config.tier1_increment);
+        const i2 = Number(config.tier2_increment);
+        const i3 = Number(config.tier3_increment) || i2;
 
+        if (currentBid <= t1) increment = i1;
+        else if (currentBid <= t2) increment = i2;
+        else increment = i3;
 
-        // Logic: If nobody has bid yet (highestBidder is null), the first bid is the current starting price.
-        let nextBid;
-        if (!auction.highestBidder) {
-            nextBid = currentBid;
-        } else {
-            // Multi-tier increment logic
-            let increment;
-            const t1 = Number(config.tier1_threshold);
-            const t2 = Number(config.tier2_threshold);
-            const i1 = Number(config.tier1_increment);
-            const i2 = Number(config.tier2_increment);
-            const i3 = Number(config.tier3_increment) || i2;
+        const nextBid = !auction.highestBidder ? currentBid : currentBid + increment;
 
-            if (currentBid <= t1) {
-                increment = i1;
-            } else if (currentBid <= t2) {
-                increment = i2;
+        // --- MINIMUM RESERVE LOGIC (CLIENT SIDE) ---
+        const comboMode = Number(config.combo_mode) || 0;
+        const comboSize = Number(config.combo_size) || 2;
+        const squadSizeItems = Number(config.squad_size) || 11;
+        const targetTotalPlayers = comboMode === 1 ? (squadSizeItems * comboSize) : squadSizeItems;
+
+        const currentCount = Number(team.player_count) || 0;
+        const purchaseSize = auction.isCombo ? (auction.comboPlayers?.length || comboSize) : 1;
+
+        const playersLeftAfterThis = Math.max(0, targetTotalPlayers - (currentCount + purchaseSize));
+
+        let reserveNeeded = 0;
+        if (comboMode === 1) {
+            const combosLeft = Math.ceil(playersLeftAfterThis / comboSize);
+            if (config.combo_base_price_mode === 'per_player') {
+                reserveNeeded = playersLeftAfterThis * Number(config.base_price);
             } else {
-                increment = i3;
+                reserveNeeded = combosLeft * Number(config.base_price);
             }
-
-            console.log(`📊 Bidding Logic: Current(${currentBid}) <= T1(${t1})? ${currentBid <= t1}. Increment: ${increment}`);
-            nextBid = currentBid + increment;
+        } else {
+            reserveNeeded = playersLeftAfterThis * Number(config.base_price);
         }
 
+        // Reserve for Captain if applicable
+        const hasCap = Number(config.has_captain_player) || 0;
+        const capPrice = Number(config.captain_price) || 0;
+        if (hasCap && (!team.captain_name || team.captain_name.trim() === '')) {
+            reserveNeeded += capPrice;
+        }
+
+        const maxAllowedBid = teamBudget - reserveNeeded;
+
+        if (nextBid > maxAllowedBid) {
+            const msg = `MINIMUM RESERVE VIOLATION! ${team.name} has ${currentCount}/${targetTotalPlayers} slots filled. Bidding for ${purchaseSize} more players. They must reserve ${formatMoney(reserveNeeded)} for the remaining ${playersLeftAfterThis} players. Max allowed bid: ${formatMoney(maxAllowedBid)}`;
+            setErrorMessage(msg);
+            return;
+        }
 
         if (teamBudget < nextBid) {
-            alert(`❌ INSUFFICIENT FUNDS!\n\nTeam: ${team.name}\nBudget: ₹${(teamBudget / 100000).toFixed(0)}L\nRequired: ₹${(nextBid / 100000).toFixed(0)}L`);
+            setErrorMessage(`INSUFFICIENT FUNDS! ${team.name} has ${formatMoney(teamBudget)}, but ${formatMoney(nextBid)} is required.`);
             return;
         }
 
@@ -157,20 +190,63 @@ const Auction = () => {
             <div style={{ height: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f172a', padding: '2rem' }}>
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ textAlign: 'center', padding: '3rem', border: '2px solid #ffd700', borderRadius: '30px', minWidth: '450px' }}>
                     <div style={{ color: '#ffd700', fontWeight: 'bold', marginBottom: '1rem', letterSpacing: '2px' }}>🎲 LUCKY DIP RESULT</div>
-                    <div style={{ width: 150, height: 150, borderRadius: '50%', background: '#1e293b', margin: '0 auto 20px auto', overflow: 'hidden', border: '4px solid gold' }}>
-                        {auction.player.image ? <img src={getImageUrl(auction.player.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gavel size={60} style={{ padding: '40px', opacity: 0.2 }} />}
-                    </div>
-                    <h1 style={{ fontSize: '3.5rem', margin: '0 0 1rem 0', fontWeight: '900' }}>{auction.player.name}</h1>
+
+                    {auction.isCombo ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center', marginBottom: '2rem' }}>
+                            {auction.comboPlayers?.map(p => (
+                                <div key={p.id} style={{ textAlign: 'center' }}>
+                                    <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#1e293b', margin: '0 auto 10px auto', overflow: 'hidden', border: '3px solid gold' }}>
+                                        {p.image ? <img src={getImageUrl(p.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gavel size={40} style={{ padding: '25px', opacity: 0.2 }} />}
+                                    </div>
+                                    <h3 style={{ fontSize: '1.2rem', margin: 0 }}>{p.name}</h3>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <>
+                            <div style={{ width: 150, height: 150, borderRadius: '50%', background: '#1e293b', margin: '0 auto 20px auto', overflow: 'hidden', border: '4px solid gold' }}>
+                                {auction.player.image ? <img src={getImageUrl(auction.player.image)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gavel size={60} style={{ padding: '40px', opacity: 0.2 }} />}
+                            </div>
+                            <h1 style={{ fontSize: '3.5rem', margin: '0 0 1rem 0', fontWeight: '900' }}>{auction.player.name}</h1>
+                        </>
+                    )}
+
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 20px', borderRadius: '10px', display: 'inline-block', marginBottom: '2.5rem' }}>
-                        {auction.player.category} | {auction.player.auction_set}
+                        {auction.isCombo ? 'COMBO SET' : `${auction.player.category} | ${auction.player.auction_set}`}
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div style={{ padding: '20px', fontSize: '1.4rem', borderRadius: '15px', fontWeight: 'bold', background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
-                            REVEAL ON PROJECTOR...
-                        </div>
+                        <button className="btn btn-primary"
+                            onClick={() => socket.emit('start_auction', auction.player)}
+                            style={{ padding: '15px', fontSize: '1.2rem' }}>
+                            START AUCTION
+                        </button>
+                        <button className="btn btn-secondary"
+                            onClick={() => {
+                                const unsold = players.filter(p => !p.team_id && p.status === 'unsold');
+                                const uniqueLots = [];
+                                const seenCombos = new Set();
+                                unsold.forEach(p => {
+                                    if (p.combo_id) {
+                                        if (!seenCombos.has(p.combo_id)) {
+                                            seenCombos.add(p.combo_id);
+                                            uniqueLots.push(p);
+                                        }
+                                    } else {
+                                        uniqueLots.push(p);
+                                    }
+                                });
+
+                                const next = uniqueLots[Math.floor(Math.random() * uniqueLots.length)];
+                                if (next && confirm(`Skip current and trigger Lucky Dip for ${next.name}?`)) {
+                                    socket.emit('trigger_lucky_dip', next);
+                                }
+                            }}
+                            style={{ padding: '12px', background: 'rgba(255,255,255,0.05)' }}>
+                            Skip & Next Player ⏭
+                        </button>
                         <button className="btn btn-secondary" onClick={() => socket.emit('update_status', 'idle')} style={{ padding: '12px' }}>
-                            Cancel Pick
+                            Cancel Result
                         </button>
                     </div>
                 </motion.div>
@@ -215,8 +291,22 @@ const Auction = () => {
                     <button className="btn btn-primary"
                         onClick={() => {
                             const unsold = players.filter(p => !p.team_id && p.status === 'unsold');
-                            if (unsold.length === 0) return alert("No unsold players left!");
-                            const random = unsold[Math.floor(Math.random() * unsold.length)];
+                            // Filter to unique lots (if combo_id exists, only take one player from that combo)
+                            const uniqueLots = [];
+                            const seenCombos = new Set();
+                            unsold.forEach(p => {
+                                if (p.combo_id) {
+                                    if (!seenCombos.has(p.combo_id)) {
+                                        seenCombos.add(p.combo_id);
+                                        uniqueLots.push(p);
+                                    }
+                                } else {
+                                    uniqueLots.push(p);
+                                }
+                            });
+
+                            if (uniqueLots.length === 0) return alert("No unsold players left!");
+                            const random = uniqueLots[Math.floor(Math.random() * uniqueLots.length)];
                             if (confirm(`Trigger Lucky Dip for ${random.name}?`)) {
                                 socket.emit('trigger_lucky_dip', random);
                             }
@@ -240,9 +330,51 @@ const Auction = () => {
 
     // --- ACTIVE AUCTION SCREEN ---
     return (
-        <div style={{ height: '100vh', overflow: 'hidden', padding: '1rem', background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
-
-            {/* Header / Status */}
+        <div style={{ height: '100vh', overflow: 'hidden', padding: '2rem', background: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
+            <AnimatePresence>
+                {errorMessage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setErrorMessage(null)}
+                        style={{
+                            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: 10000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <motion.div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                background: '#1e293b', padding: '3rem', borderRadius: '30px',
+                                border: '4px solid #ef4444', textAlign: 'center', maxWidth: '600px',
+                                boxShadow: '0 0 100px rgba(239, 68, 68, 0.4)', position: 'relative'
+                            }}
+                        >
+                            <button
+                                onClick={() => setErrorMessage(null)}
+                                style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#64748b', fontSize: '1.5rem', cursor: 'pointer' }}
+                            >✕</button>
+                            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>❌</div>
+                            <h1 style={{ fontSize: '3rem', color: '#ef4444', fontWeight: '900', margin: '0 0 1.5rem 0', textTransform: 'uppercase' }}>Bid Rejected!</h1>
+                            <div style={{ fontSize: '1.8rem', color: 'white', lineHeight: '1.4', fontWeight: 'bold' }}>
+                                {errorMessage}
+                            </div>
+                            <div style={{ marginTop: '2rem', height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+                                <motion.div
+                                    initial={{ width: '100%' }}
+                                    animate={{ width: '0%' }}
+                                    transition={{ duration: 5, ease: 'linear' }}
+                                    style={{ height: '100%', background: '#ef4444' }}
+                                />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 {config.tournament_logo && (
                     <img src={getImageUrl(config.tournament_logo)} style={{ height: 50, marginRight: '15px', background: 'white', padding: '5px', borderRadius: '8px' }} alt="Tournament Logo" />
@@ -279,7 +411,7 @@ const Auction = () => {
                                 {auction.comboPlayers && auction.comboPlayers.map(p => (
                                     <div key={p.id} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '15px', width: '100px' }}>
                                         <div style={{ width: 60, height: 60, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 5px auto', border: p.is_icon ? '2px solid gold' : '2px solid #555' }}>
-                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                         </div>
                                         <div style={{ color: 'white', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                                         <div style={{ color: '#aaa', fontSize: '0.7rem' }}>{p.category}</div>

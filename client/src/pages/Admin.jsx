@@ -69,8 +69,22 @@ const Admin = () => {
 
     const handleRandomPick = () => {
         const unsold = players.filter(p => p.status === 'unsold');
-        if (unsold.length === 0) return alert("No unsold players left!");
-        const random = unsold[Math.floor(Math.random() * unsold.length)];
+        // Unique Lots logic
+        const uniqueLots = [];
+        const seenCombos = new Set();
+        unsold.forEach(p => {
+            if (p.combo_id) {
+                if (!seenCombos.has(p.combo_id)) {
+                    seenCombos.add(p.combo_id);
+                    uniqueLots.push(p);
+                }
+            } else {
+                uniqueLots.push(p);
+            }
+        });
+
+        if (uniqueLots.length === 0) return alert("No unsold players left!");
+        const random = uniqueLots[Math.floor(Math.random() * uniqueLots.length)];
 
         if (confirm(`Trigger Lucky Dip animation on Projector?`)) {
             socket.emit('trigger_lucky_dip', random);

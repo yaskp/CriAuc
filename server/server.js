@@ -129,15 +129,70 @@ io.on('connection', (socket) => {
         const isValidAmount = amount > currentAuction.currentBid || (!currentAuction.highestBidder && amount === currentAuction.currentBid);
 
         if (currentAuction.status === 'bidding' && isValidAmount && !isSameTeam) {
-            currentAuction.currentBid = amount;
-            currentAuction.highestBidder = { teamId, teamName };
+            // --- MINIMUM RESERVE LOGIC ---
+            db.get("SELECT * FROM auction_config WHERE id = 1", [], (err, config) => {
+                if (err || !config) return;
 
-            currentAuction.bidHistory.push({
-                teamId, teamName, amount, time: new Date().toLocaleTimeString()
+                const hasCap = config.has_captain_player || 0;
+                const hasSpo = config.has_sponsor_player || 0;
+                const capPrice = Number(config.captain_price) || 0;
+                const comboMode = config.combo_mode || 0;
+                const comboSize = config.combo_size || 2;
+                const squadSizeItems = config.squad_size || 11; // items to buy (combos or players)
+                const targetTotalPlayers = comboMode === 1 ? (squadSizeItems * comboSize) : squadSizeItems;
+
+                db.get(`
+                    SELECT t.budget, 
+                    (SELECT COUNT(*) FROM players p WHERE p.team_id = t.id) as players_in_db,
+                    (CASE WHEN t.captain_name IS NOT NULL AND t.captain_name != '' THEN 1 ELSE 0 END) as has_cap_filled,
+                    (CASE WHEN t.sponsor_logo IS NOT NULL AND t.sponsor_logo != '' THEN 1 ELSE 0 END) as has_spo_filled
+                    FROM teams t WHERE t.id = ?
+                `, [teamId], (err, teamData) => {
+                    if (err || !teamData) return;
+
+                    const currentCount = teamData.players_in_db + teamData.has_cap_filled + (hasSpo ? teamData.has_spo_filled : 0);
+                    const purchaseSize = currentAuction.isCombo ? (currentAuction.comboPlayers?.length || comboSize) : 1;
+
+                    const playersLeftAfterThis = Math.max(0, targetTotalPlayers - (currentCount + purchaseSize));
+
+                    let reserveNeeded = 0;
+                    if (comboMode === 1) {
+                        // In combo mode, we reserve based on items (combos) remaining
+                        const combosLeft = Math.ceil(playersLeftAfterThis / comboSize);
+                        if (config.combo_base_price_mode === 'per_player') {
+                            reserveNeeded = playersLeftAfterThis * config.base_price;
+                        } else {
+                            reserveNeeded = combosLeft * config.base_price;
+                        }
+                    } else {
+                        reserveNeeded = playersLeftAfterThis * config.base_price;
+                    }
+
+                    // Also reserve for Captain if not filled yet
+                    if (hasCap && !teamData.has_cap_filled) {
+                        reserveNeeded += capPrice;
+                    }
+
+                    const maxAllowedBid = teamData.budget - reserveNeeded;
+
+                    if (amount > maxAllowedBid) {
+                        const msg = `MINIMUM RESERVE VIOLATION! ${teamName} has ${currentCount}/${targetTotalPlayers} slots filled. Bidding for ${purchaseSize} more players. They must reserve ₹${reserveNeeded.toLocaleString()} for the remaining ${playersLeftAfterThis} players. Max allowed bid: ₹${maxAllowedBid.toLocaleString()}`;
+                        console.log(`❌ BID REJECTED: ${msg}`);
+                        io.emit('error', { message: msg, teamName: teamName });
+                        return;
+                    }
+
+                    // Proceed with Bid
+                    currentAuction.currentBid = amount;
+                    currentAuction.highestBidder = { teamId, teamName };
+                    currentAuction.bidHistory.push({
+                        teamId, teamName, amount, time: new Date().toLocaleTimeString()
+                    });
+
+                    io.emit('auction_update', currentAuction);
+                    io.emit('new_bid', { teamName, amount });
+                });
             });
-
-            io.emit('auction_update', currentAuction);
-            io.emit('new_bid', { teamName, amount });
         }
     });
 
@@ -157,12 +212,33 @@ io.on('connection', (socket) => {
     });
 
     socket.on('trigger_lucky_dip', (player) => {
-        currentAuction = {
-            player: player,
-            status: 'lucky_dip',
-            bidHistory: []
-        };
-        io.emit('auction_update', currentAuction);
+        db.get("SELECT status, team_id, combo_id FROM players WHERE id = ?", [player.id], (err, row) => {
+            if (row && row.status === 'unsold' && !row.team_id) {
+                if (row.combo_id) {
+                    db.all("SELECT * FROM players WHERE combo_id = ?", [row.combo_id], (err2, comboPlayers) => {
+                        currentAuction = {
+                            player: player,
+                            comboPlayers: comboPlayers,
+                            isCombo: true,
+                            status: 'lucky_dip',
+                            bidHistory: []
+                        };
+                        io.emit('auction_update', currentAuction);
+                    });
+                } else {
+                    currentAuction = {
+                        player: player,
+                        isCombo: false,
+                        status: 'lucky_dip',
+                        bidHistory: []
+                    };
+                    io.emit('auction_update', currentAuction);
+                }
+            } else {
+                socket.emit('error', { message: 'This player is already sold or unavailable!' });
+                socket.emit('refresh_data');
+            }
+        });
     });
 
     socket.on('end_auction', () => {

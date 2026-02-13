@@ -105,6 +105,10 @@ router.post('/import', upload.single('file'), (req, res) => {
                         return res.status(500).json({ error: "Database error during import" });
                     }
                     console.log(`✅ Import finished. Inserted: ${inserted}, Ignored (Duplicates/Empty): ${ignored}, Errors: ${errors}`);
+
+                    const io = req.app.get('socketio');
+                    if (io) io.emit('refresh_data');
+
                     res.json({
                         message: `Import complete: ${inserted} new players added.`,
                         details: { inserted, ignored, errors }
@@ -130,6 +134,10 @@ router.put('/bulk-update', (req, res) => {
 
     db.run(sql, [...values, ...ids], function (err) {
         if (err) return res.status(500).json({ error: err.message });
+
+        const io = req.app.get('socketio');
+        if (io) io.emit('refresh_data');
+
         res.json({ message: `Successfully updated ${this.changes} players.` });
     });
 });
@@ -249,6 +257,10 @@ router.post('/reset', (req, res) => {
 router.delete('/:id', (req, res) => {
     db.run("DELETE FROM players WHERE id = ?", [req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+
+        const io = req.app.get('socketio');
+        if (io) io.emit('refresh_data');
+
         res.json({ message: "Deleted" });
     });
 });
@@ -256,6 +268,10 @@ router.delete('/:id', (req, res) => {
 router.post('/unsold/:id', (req, res) => {
     db.run("UPDATE players SET status = 'unsold', team_id = NULL, sold_price = NULL WHERE id = ?", [req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+
+        const io = req.app.get('socketio');
+        if (io) io.emit('refresh_data');
+
         res.json({ message: "Player marked unsold" });
     });
 });

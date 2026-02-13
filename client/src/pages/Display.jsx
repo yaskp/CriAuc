@@ -9,6 +9,7 @@ const Display = () => {
     const [auction, setAuction] = useState({ player: null, currentBid: 0, highestBidder: null, status: 'idle', bidHistory: [] });
     const [lastBidderTeam, setLastBidderTeam] = useState(null);
     const [lastSold, setLastSold] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
     const [config, setConfig] = useState({
         tier1_threshold: 10000,
         tier1_increment: 2000,
@@ -45,7 +46,13 @@ const Display = () => {
                 console.log("🎯 CAPTURING SOLD PLAYER:", data.player.name);
                 axios.get(getApiUrl('/api/teams')).then(res => {
                     const t = res.data.find(x => x.id === data.highestBidder.teamId);
-                    setLastSold({ player: data.player, price: data.currentBid, team: t });
+                    setLastSold({
+                        player: data.player,
+                        price: data.currentBid,
+                        team: t,
+                        isCombo: data.isCombo,
+                        comboPlayers: data.comboPlayers
+                    });
                 });
             }
 
@@ -78,14 +85,21 @@ const Display = () => {
             axios.get(getApiUrl('/api/teams')).then(res => setTeams(res.data));
         };
 
+        const onError = (err) => {
+            setErrorMessage(err.message);
+            setTimeout(() => setErrorMessage(null), 5000);
+        };
+
         socket.on('auction_update', onAuctionUpdate);
         socket.on('auction_ended', onAuctionEnded);
         socket.on('refresh_data', onRefresh);
+        socket.on('error', onError);
 
         return () => {
             socket.off('auction_update', onAuctionUpdate);
             socket.off('auction_ended', onAuctionEnded);
             socket.off('refresh_data', onRefresh);
+            socket.off('error', onError);
         };
     }, []);
 
@@ -177,9 +191,24 @@ const Display = () => {
                                 initial={{ y: 50, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: -50, opacity: 0 }}
-                                style={{ fontSize: '5.5rem', fontWeight: '900', color: '#ffd700', textShadow: '0 0 30px rgba(255, 215, 0, 0.4)' }}
+                                style={{ textAlign: 'center' }}
                             >
-                                {shufflePlayer?.name || 'PICKING...'}
+                                {shuffleDone && auction.isCombo ? (
+                                    <div style={{ display: 'flex', gap: '40px', alignItems: 'center', justifyContent: 'center' }}>
+                                        {auction.comboPlayers?.map((p, idx) => (
+                                            <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: '5px solid gold', background: 'white', marginBottom: '15px' }}>
+                                                    <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                </div>
+                                                <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#ffd700' }}>{p.name}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '5.5rem', fontWeight: '900', color: '#ffd700', textShadow: '0 0 30px rgba(255, 215, 0, 0.4)' }}>
+                                        {shufflePlayer?.name || 'PICKING...'}
+                                    </div>
+                                )}
                             </motion.div>
                         </AnimatePresence>
                     </div>
@@ -229,14 +258,31 @@ const Display = () => {
                         <div style={{ background: '#ffd700', color: 'black', padding: '10px 40px', borderRadius: '50px', fontWeight: 'bold', fontSize: '2rem', marginBottom: '2rem', boxShadow: '0 0 50px gold' }}>
                             SOLD
                         </div>
-                        <div style={{ width: '40vh', height: '40vh', borderRadius: '20px', overflow: 'hidden', margin: '0 auto', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '15px' }}>
-                            {lastSold.player.image ? (
-                                <img src={getImageUrl(lastSold.player.image)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            ) : (
-                                <div style={{ color: '#0f172a', opacity: 0.1 }}><User size={150} /></div>
-                            )}
-                        </div>
-                        <h1 style={{ fontSize: '4rem', margin: '1rem 0', color: 'white', textTransform: 'uppercase', fontWeight: '900', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>{lastSold.player.name}</h1>
+
+                        {lastSold.isCombo ? (
+                            <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', marginBottom: '1rem' }}>
+                                {lastSold.comboPlayers.map(p => (
+                                    <div key={p.id} style={{ textAlign: 'center' }}>
+                                        <div style={{ width: '25vh', height: '25vh', borderRadius: '20px', overflow: 'hidden', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '10px', marginBottom: '15px' }}>
+                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        </div>
+                                        <h1 style={{ fontSize: '2rem', color: 'white', textTransform: 'uppercase', fontWeight: '900' }}>{p.name}</h1>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{ width: '40vh', height: '40vh', borderRadius: '20px', overflow: 'hidden', margin: '0 auto', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '15px' }}>
+                                    {lastSold.player.image ? (
+                                        <img src={getImageUrl(lastSold.player.image)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    ) : (
+                                        <div style={{ color: '#0f172a', opacity: 0.1 }}><User size={150} /></div>
+                                    )}
+                                </div>
+                                <h1 style={{ fontSize: '4rem', margin: '1rem 0', color: 'white', textTransform: 'uppercase', fontWeight: '900', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>{lastSold.player.name}</h1>
+                            </>
+                        )}
+
                         <h2 style={{ fontSize: '3rem', color: '#ffd700', fontWeight: 'bold' }}>{lastSold.team.name}</h2>
                         <h3 style={{ fontSize: '2rem', color: 'white', background: 'rgba(0,0,0,0.3)', display: 'inline-block', padding: '10px 30px', borderRadius: '15px', marginTop: '1rem' }}>{formatMoney(lastSold.price)}</h3>
                     </motion.div>
@@ -282,6 +328,49 @@ const Display = () => {
 
     return (
         <div style={{ height: '100vh', overflow: 'hidden', padding: '2rem', background: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
+            <AnimatePresence>
+                {errorMessage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setErrorMessage(null)}
+                        style={{
+                            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: 10000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <motion.div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                background: '#1e293b', padding: '3rem', borderRadius: '30px',
+                                border: '4px solid #ef4444', textAlign: 'center', maxWidth: '600px',
+                                boxShadow: '0 0 100px rgba(239, 68, 68, 0.4)', position: 'relative'
+                            }}
+                        >
+                            <button
+                                onClick={() => setErrorMessage(null)}
+                                style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#64748b', fontSize: '1.5rem', cursor: 'pointer' }}
+                            >✕</button>
+                            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>❌</div>
+                            <h1 style={{ fontSize: '3rem', color: '#ef4444', fontWeight: '900', margin: '0 0 1.5rem 0', textTransform: 'uppercase' }}>Bid Rejected!</h1>
+                            <div style={{ fontSize: '1.8rem', color: 'white', lineHeight: '1.4', fontWeight: 'bold' }}>
+                                {errorMessage}
+                            </div>
+                            <div style={{ marginTop: '2rem', height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+                                <motion.div
+                                    initial={{ width: '100%' }}
+                                    animate={{ width: '0%' }}
+                                    transition={{ duration: 5, ease: 'linear' }}
+                                    style={{ height: '100%', background: '#ef4444' }}
+                                />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #333', paddingBottom: '1rem', position: 'relative' }}>
                 {config?.tournament_logo && (

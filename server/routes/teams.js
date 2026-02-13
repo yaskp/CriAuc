@@ -13,9 +13,27 @@ const upload = multer({ storage: storage });
 // Get Teams
 router.get('/', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    db.all("SELECT * FROM teams", [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
+    // We count players in DB + 1 if captain_name exists + 1 if sponsor_logo exists (if configured)
+    db.get("SELECT * FROM auction_config WHERE id = 1", [], (err, config) => {
+        const hasCap = config?.has_captain_player || 0;
+        const hasSpo = config?.has_sponsor_player || 0;
+        const comboMode = config?.combo_mode || 0;
+        const comboSize = config?.combo_size || 2;
+        const squadSizeItems = config?.squad_size || 11;
+        const targetTotalPlayers = comboMode === 1 ? (squadSizeItems * comboSize) : squadSizeItems;
+
+        db.all(`
+            SELECT t.*, 
+            (
+                (SELECT COUNT(*) FROM players p WHERE p.team_id = t.id) + 
+                (CASE WHEN t.captain_name IS NOT NULL AND t.captain_name != '' THEN 1 ELSE 0 END) + 
+                (CASE WHEN t.sponsor_logo IS NOT NULL AND t.sponsor_logo != '' AND ${hasSpo} = 1 THEN 1 ELSE 0 END)
+            ) as player_count 
+            FROM teams t
+        `, [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows.map(r => ({ ...r, target_size: targetTotalPlayers })));
+        });
     });
 });
 
