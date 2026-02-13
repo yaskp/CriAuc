@@ -10,6 +10,7 @@ const Display = () => {
     const [lastBidderTeam, setLastBidderTeam] = useState(null);
     const [lastSold, setLastSold] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [squads, setSquads] = useState({});
     const [config, setConfig] = useState({
         tier1_threshold: 10000,
         tier1_increment: 2000,
@@ -44,8 +45,21 @@ const Display = () => {
             // Capture Last Sold
             if (data.status === 'sold' && data.player && data.highestBidder) {
                 console.log("🎯 CAPTURING SOLD PLAYER:", data.player.name);
-                axios.get(getApiUrl('/api/teams')).then(res => {
-                    const t = res.data.find(x => x.id === data.highestBidder.teamId);
+                axios.get(getApiUrl('/api/teams')).then(async res => {
+                    const tList = res.data;
+                    const t = tList.find(x => x.id === data.highestBidder.teamId);
+
+                    // Fetch all squads for the standing view
+                    const squadData = {};
+                    for (const team of tList) {
+                        try {
+                            const sRes = await axios.get(getApiUrl(`/api/teams/${team.id}/squad`));
+                            squadData[team.id] = sRes.data;
+                        } catch (e) { console.error(e); }
+                    }
+                    setSquads(squadData);
+                    setTeams(tList);
+
                     setLastSold({
                         player: data.player,
                         price: data.currentBid,
@@ -58,6 +72,7 @@ const Display = () => {
 
             if (data.status === 'bidding' || data.status === 'lucky_dip') {
                 setLastSold(null);
+                setSquads({});
             }
 
             setAuction(data);
@@ -197,8 +212,8 @@ const Display = () => {
                                     <div style={{ display: 'flex', gap: '40px', alignItems: 'center', justifyContent: 'center' }}>
                                         {auction.comboPlayers?.map((p, idx) => (
                                             <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: '5px solid gold', background: 'white', marginBottom: '15px' }}>
-                                                    <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: '5px solid gold', background: 'white', marginBottom: '15px', boxShadow: '0 0 30px rgba(255, 215, 0, 0.3)' }}>
+                                                    <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%' }} />
                                                 </div>
                                                 <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#ffd700' }}>{p.name}</div>
                                             </div>
@@ -263,8 +278,8 @@ const Display = () => {
                             <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', marginBottom: '1rem' }}>
                                 {lastSold.comboPlayers.map(p => (
                                     <div key={p.id} style={{ textAlign: 'center' }}>
-                                        <div style={{ width: '25vh', height: '25vh', borderRadius: '20px', overflow: 'hidden', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '10px', marginBottom: '15px' }}>
-                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <div style={{ width: '28vh', height: '28vh', borderRadius: '30px', overflow: 'hidden', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.6)', border: '4px solid gold', marginBottom: '20px' }}>
+                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/150'} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 10%' }} />
                                         </div>
                                         <h1 style={{ fontSize: '2rem', color: 'white', textTransform: 'uppercase', fontWeight: '900' }}>{p.name}</h1>
                                     </div>
@@ -285,6 +300,48 @@ const Display = () => {
 
                         <h2 style={{ fontSize: '3rem', color: '#ffd700', fontWeight: 'bold' }}>{lastSold.team.name}</h2>
                         <h3 style={{ fontSize: '2rem', color: 'white', background: 'rgba(0,0,0,0.3)', display: 'inline-block', padding: '10px 30px', borderRadius: '15px', marginTop: '1rem' }}>{formatMoney(lastSold.price)}</h3>
+                    </motion.div>
+
+                    {/* TEAM STANDING GRID (SCROLLABLE OR MULTI-COLUMN) */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        style={{
+                            marginTop: '3vh',
+                            width: '95%',
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${Math.min(teams.length, 5)}, 1fr)`,
+                            gap: '15px',
+                            padding: '10px',
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: '30px',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            maxHeight: '40vh',
+                            overflowY: 'auto'
+                        }}
+                    >
+                        {teams.map(team => {
+                            const squad = squads[team.id] || [];
+                            return (
+                                <div key={team.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', borderBottom: '1px solid rgba(255,215,0,0.2)', paddingBottom: '8px' }}>
+                                        <img src={getImageUrl(team.logo)} style={{ height: 35, width: 35, objectFit: 'contain', background: 'white', borderRadius: '5px', padding: '2px' }} />
+                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ffd700', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{team.name}</div>
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px', fontWeight: 'bold' }}>SQUAD ({squad.length + (team.captain_name ? 1 : 0)})</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {team.captain_name && (
+                                            <div style={{ background: '#e11d48', padding: '2px 8px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 'bold' }}>{team.captain_name} (C)</div>
+                                        )}
+                                        {squad.map(p => (
+                                            <div key={p.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '5px', fontSize: '0.7rem' }}>{p.name}</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </motion.div>
 
                     <MarqueeFooter />
@@ -401,8 +458,8 @@ const Display = () => {
                             <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
                                 {auction.comboPlayers && auction.comboPlayers.map(p => (
                                     <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <div style={{ width: 140, height: 140, borderRadius: '50%', overflow: 'hidden', border: p.is_icon ? '3px solid gold' : '3px solid rgba(255,255,255,0.2)' }}>
-                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/200'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <div style={{ width: 140, height: 140, borderRadius: '50%', overflow: 'hidden', border: p.is_icon ? '5px solid gold' : '5px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' }}>
+                                            <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/200'} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%' }} />
                                         </div>
                                         <h3 style={{ fontSize: '1.2rem', margin: '10px 0', color: 'white' }}>{p.name}</h3>
                                         {p.is_captain === 1 && <span style={{ background: '#e11d48', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.6rem' }}>CAPTAIN</span>}
@@ -414,9 +471,16 @@ const Display = () => {
                         <>
                             <motion.img
                                 key={auction.player.image}
-                                initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
                                 src={auction.player.image ? getImageUrl(auction.player.image) : 'https://via.placeholder.com/600?text=No+Photo'}
-                                style={{ height: '60%', objectFit: 'contain', zIndex: 10 }}
+                                style={{
+                                    height: '65%',
+                                    width: '90%',
+                                    objectFit: 'contain',
+                                    zIndex: 10,
+                                    filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.8))'
+                                }}
                             />
                             <div style={{ textAlign: 'center', marginTop: '1rem', zIndex: 10 }}>
                                 <h1 style={{ fontSize: '3rem', fontWeight: '900', margin: 0, color: auction.player.is_icon ? 'gold' : 'white' }}>{auction.player.name}</h1>

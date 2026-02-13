@@ -71,26 +71,58 @@ const NavBar = () => {
     );
 };
 
+const Footer = () => {
+    const location = useLocation();
+
+    // Hide Footer on Display, Leaderboard, and Public Screens (Broadcast modes)
+    if (location.pathname === '/display' ||
+        location.pathname === '/leaderboard' ||
+        location.pathname.startsWith('/public/')) return null;
+
+    return (
+        <footer style={{
+            textAlign: 'center',
+            padding: '3rem 1rem',
+            marginTop: 'auto',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            background: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(10px)'
+        }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', fontWeight: '500' }}>
+                    © {new Date().getFullYear()} <span style={{ color: 'var(--primary)' }}>CricAuction</span>. All Rights Reserved.
+                </p>
+                <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                    Proudly Developed by <a href="https://vycle.in" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>Vycle Private Limited</a>
+                </p>
+            </div>
+        </footer>
+    );
+};
+
 function App() {
     return (
         <Router>
-            <NavBar />
-            <div style={{ paddingBottom: '3rem' }}>
-                <Routes>
-                    <Route path="/" element={<Auction />} />
-                    <Route path="/display" element={<Display />} />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/registry" element={<Players />} />
-                    <Route path="/teams" element={<Teams />} />
-                    <Route path="/teams/:teamId" element={<Teams />} />
-                    <Route path="/manage-teams" element={<ManageTeams />} />
-                    <Route path="/settings" element={<Settings />} />
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                <NavBar />
+                <div style={{ flex: 1 }}>
+                    <Routes>
+                        <Route path="/" element={<Auction />} />
+                        <Route path="/display" element={<Display />} />
+                        <Route path="/leaderboard" element={<Leaderboard />} />
+                        <Route path="/admin" element={<Admin />} />
+                        <Route path="/registry" element={<Players />} />
+                        <Route path="/teams" element={<Teams />} />
+                        <Route path="/teams/:teamId" element={<Teams />} />
+                        <Route path="/manage-teams" element={<ManageTeams />} />
+                        <Route path="/settings" element={<Settings />} />
 
-                    {/* Public Routes */}
-                    <Route path="/public/leaderboard" element={<PublicLeaderboard />} />
-                    <Route path="/public/team/:teamId" element={<PublicTeamView />} />
-                </Routes>
+                        {/* Public Routes */}
+                        <Route path="/public/leaderboard" element={<PublicLeaderboard />} />
+                        <Route path="/public/team/:teamId" element={<PublicTeamView />} />
+                    </Routes>
+                </div>
+                <Footer />
             </div>
         </Router>
     );
