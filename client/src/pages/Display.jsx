@@ -287,19 +287,36 @@ const Display = () => {
                             </div>
                         ) : (
                             <>
-                                <div style={{ width: '40vh', height: '40vh', borderRadius: '20px', overflow: 'hidden', margin: '0 auto', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '15px' }}>
+                                <div style={{ width: '50vh', height: '50vh', borderRadius: '20px', overflow: 'hidden', margin: '0 auto', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: '15px' }}>
                                     {lastSold.player.image ? (
                                         <img src={getImageUrl(lastSold.player.image)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                     ) : (
                                         <div style={{ color: '#0f172a', opacity: 0.1 }}><User size={150} /></div>
                                     )}
                                 </div>
-                                <h1 style={{ fontSize: '4rem', margin: '1rem 0', color: 'white', textTransform: 'uppercase', fontWeight: '900', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>{lastSold.player.name}</h1>
+                                <h1 style={{ fontSize: '4rem', margin: '0.5rem 0', color: 'white', textTransform: 'uppercase', fontWeight: '900', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>{lastSold.player.name}</h1>
                             </>
                         )}
 
-                        <h2 style={{ fontSize: '3rem', color: '#ffd700', fontWeight: 'bold' }}>{lastSold.team.name}</h2>
-                        <h3 style={{ fontSize: '2rem', color: 'white', background: 'rgba(0,0,0,0.3)', display: 'inline-block', padding: '10px 30px', borderRadius: '15px', marginTop: '1rem' }}>{formatMoney(lastSold.price)}</h3>
+                        <h2 style={{ fontSize: '3rem', color: '#ffd700', fontWeight: 'bold', margin: '0' }}>{lastSold.team.name}</h2>
+
+                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center', marginTop: '1rem' }}>
+                            <h3 style={{ fontSize: '2rem', color: 'white', background: 'rgba(0,0,0,0.3)', display: 'inline-block', padding: '10px 30px', borderRadius: '15px' }}>{formatMoney(lastSold.price)}</h3>
+
+                            <div style={{ display: 'flex', gap: '30px', background: 'rgba(255,255,255,0.05)', padding: '10px 30px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.2)' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Players</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>
+                                        {(squads[lastSold.team.id]?.length || 0) + (lastSold.team.captain_name ? 1 : 0)}
+                                    </div>
+                                </div>
+                                <div style={{ height: '30px', width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'center' }}></div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Purse Left</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ffd700' }}>{formatMoney(lastSold.team.budget)}</div>
+                                </div>
+                            </div>
+                        </div>
                     </motion.div>
 
                     {/* TEAM STANDING GRID (SCROLLABLE OR MULTI-COLUMN) */}
@@ -308,35 +325,36 @@ const Display = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
                         style={{
-                            marginTop: '3vh',
-                            width: '95%',
+                            marginTop: '2vh',
+                            width: '98%',
                             display: 'grid',
                             gridTemplateColumns: `repeat(${Math.min(teams.length, 5)}, 1fr)`,
-                            gap: '15px',
+                            gap: '10px',
                             padding: '10px',
                             background: 'rgba(255,255,255,0.05)',
-                            borderRadius: '30px',
+                            borderRadius: '20px',
                             backdropFilter: 'blur(10px)',
                             border: '1px solid rgba(255,255,255,0.1)',
-                            maxHeight: '40vh',
-                            overflowY: 'auto'
+                            flex: 1,
+                            overflow: 'hidden',
+                            marginBottom: '100px'
                         }}
                     >
                         {teams.map(team => {
                             const squad = squads[team.id] || [];
                             return (
-                                <div key={team.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', borderBottom: '1px solid rgba(255,215,0,0.2)', paddingBottom: '8px' }}>
-                                        <img src={getImageUrl(team.logo)} style={{ height: 35, width: 35, objectFit: 'contain', background: 'white', borderRadius: '5px', padding: '2px' }} />
-                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ffd700', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{team.name}</div>
+                                <div key={team.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', borderBottom: '1px solid rgba(255,215,0,0.2)', paddingBottom: '5px' }}>
+                                        <img src={getImageUrl(team.logo)} style={{ height: 30, width: 30, objectFit: 'contain', background: 'white', borderRadius: '5px', padding: '1px' }} />
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#ffd700', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{team.name}</div>
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px', fontWeight: 'bold' }}>SQUAD ({squad.length + (team.captain_name ? 1 : 0)})</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                    <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px', fontWeight: 'bold' }}>SQUAD ({(squad.length || 0) + (team.captain_name ? 1 : 0)})</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', overflowY: 'auto', maxHeight: '120px' }} className="custom-scroll">
                                         {team.captain_name && (
-                                            <div style={{ background: '#e11d48', padding: '2px 8px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 'bold' }}>{team.captain_name} (C)</div>
+                                            <div style={{ background: '#e11d48', padding: '1px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>{team.captain_name} (C)</div>
                                         )}
                                         {squad.map(p => (
-                                            <div key={p.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '5px', fontSize: '0.7rem' }}>{p.name}</div>
+                                            <div key={p.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 6px', borderRadius: '4px', fontSize: '0.65rem' }}>{p.name}</div>
                                         ))}
                                     </div>
                                 </div>
@@ -349,6 +367,13 @@ const Display = () => {
                         @keyframes marquee-display {
                             0% { transform: translateX(0); }
                             100% { transform: translateX(-50%); }
+                        }
+                        .custom-scroll::-webkit-scrollbar {
+                            width: 3px;
+                        }
+                        .custom-scroll::-webkit-scrollbar-thumb {
+                            background: rgba(255,215,0,0.3);
+                            border-radius: 10px;
                         }
                     `}</style>
                 </div>
@@ -384,7 +409,7 @@ const Display = () => {
     }
 
     return (
-        <div style={{ height: '100vh', overflow: 'hidden', padding: '2rem', background: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
+        <div style={{ height: '100vh', overflow: 'hidden', padding: '1.5rem', background: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
             <AnimatePresence>
                 {errorMessage && (
                     <motion.div
@@ -447,22 +472,22 @@ const Display = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '30% 45% 25%', height: '85vh', marginTop: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '40% 35% 25%', height: '85vh', marginTop: '1rem' }}>
                 {/* PLAYER CARD */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {auction.isCombo ? (
                         <div style={{ textAlign: 'center', zIndex: 10, width: '100%' }}>
-                            <h2 style={{ fontSize: '2rem', color: '#ec4899', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '3px' }}>
+                            <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '3px' }}>
                                 {auction.player.combo_display_name || 'COMBO PAIR'}
                             </h2>
-                            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', flexWrap: 'wrap' }}>
                                 {auction.comboPlayers && auction.comboPlayers.map(p => (
                                     <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <div style={{ width: 140, height: 140, borderRadius: '50%', overflow: 'hidden', border: p.is_icon ? '5px solid gold' : '5px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' }}>
+                                        <div style={{ width: 180, height: 180, borderRadius: '50%', overflow: 'hidden', border: p.is_icon ? '5px solid gold' : '5px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', background: 'white' }}>
                                             <img src={p.image ? getImageUrl(p.image) : 'https://via.placeholder.com/200'} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%' }} />
                                         </div>
-                                        <h3 style={{ fontSize: '1.2rem', margin: '10px 0', color: 'white' }}>{p.name}</h3>
-                                        {p.is_captain === 1 && <span style={{ background: '#e11d48', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.6rem' }}>CAPTAIN</span>}
+                                        <h3 style={{ fontSize: '1.5rem', margin: '10px 0', color: 'white' }}>{p.name}</h3>
+                                        {p.is_captain === 1 && <span style={{ background: '#e11d48', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.8rem' }}>CAPTAIN</span>}
                                     </div>
                                 ))}
                             </div>
@@ -475,16 +500,16 @@ const Display = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 src={auction.player.image ? getImageUrl(auction.player.image) : 'https://via.placeholder.com/600?text=No+Photo'}
                                 style={{
-                                    height: '65%',
-                                    width: '90%',
+                                    height: '75%',
+                                    width: '100%',
                                     objectFit: 'contain',
                                     zIndex: 10,
                                     filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.8))'
                                 }}
                             />
                             <div style={{ textAlign: 'center', marginTop: '1rem', zIndex: 10 }}>
-                                <h1 style={{ fontSize: '3rem', fontWeight: '900', margin: 0, color: auction.player.is_icon ? 'gold' : 'white' }}>{auction.player.name}</h1>
-                                <h2 style={{ color: '#cbd5e1', fontSize: '1.5rem', textTransform: 'uppercase' }}>{auction.player.category}</h2>
+                                <h1 style={{ fontSize: '4rem', fontWeight: '900', margin: 0, color: auction.player.is_icon ? 'gold' : 'white' }}>{auction.player.name}</h1>
+                                <h2 style={{ color: '#cbd5e1', fontSize: '2rem', textTransform: 'uppercase' }}>{auction.player.category}</h2>
                             </div>
                         </>
                     )}

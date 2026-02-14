@@ -153,6 +153,21 @@ io.on('connection', (socket) => {
                     const currentCount = teamData.players_in_db + teamData.has_cap_filled + (hasSpo ? teamData.has_spo_filled : 0);
                     const purchaseSize = currentAuction.isCombo ? (currentAuction.comboPlayers?.length || comboSize) : 1;
 
+                    // --- SQUAD SIZE LIMIT CHECK ---
+                    if (currentCount >= targetTotalPlayers) {
+                        const msg = `SQUAD FULL! ${teamName} already has ${currentCount}/${targetTotalPlayers} players and cannot bid further.`;
+                        console.log(`❌ BID REJECTED: ${msg}`);
+                        io.emit('error', { message: msg, teamName: teamName });
+                        return;
+                    }
+
+                    if (currentCount + purchaseSize > targetTotalPlayers) {
+                        const msg = `SQUAD LIMIT EXCEEDED! ${teamName} has ${currentCount} players and cannot buy ${purchaseSize} more players (Limit: ${targetTotalPlayers}).`;
+                        console.log(`❌ BID REJECTED: ${msg}`);
+                        io.emit('error', { message: msg, teamName: teamName });
+                        return;
+                    }
+
                     const playersLeftAfterThis = Math.max(0, targetTotalPlayers - (currentCount + purchaseSize));
 
                     let reserveNeeded = 0;
