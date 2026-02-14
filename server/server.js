@@ -37,6 +37,20 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/sponsors', sponsorRoutes);
 
+// --- STATIC FRONTEND SERVING (For Render/Production) ---
+// 1. Serve static files from the React dist folder
+const distPath = path.join(__dirname, '../client/dist');
+app.use(express.static(distPath));
+
+// 2. Catch-all route for SPA (React Router)
+// This MUST be the last route. It sends index.html for any request that doesn't match API or static files.
+app.get('*', (req, res) => {
+    // Only send index.html if it's not a request for a missing static file (like a .png)
+    if (req.path.startsWith('/api') || req.path.includes('.')) {
+        return res.status(404).json({ message: 'Not found' });
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 
 // Socket Logic for Auction
 let currentAuction = {
